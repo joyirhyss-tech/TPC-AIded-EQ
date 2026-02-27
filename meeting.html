@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Meeting | TPC Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+/* Meeting-specific styles matching original dashboard */
+.meeting-app { min-height: 100vh; position: relative; }
+
+.meeting-sidebar {
+  background: linear-gradient(180deg, #1a1520 0%, #2d2a33 60%, #3a3344 100%);
+  color: white;
+  position: fixed;
+  width: 270px;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.meeting-sidebar .sidebar-header {
+  padding: 24px 22px 16px;
+  border-bottom: 1px solid rgba(200,169,97,0.2);
+}
+.meeting-sidebar .sidebar-header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gold-light, #e8d5a0);
+  line-height: 1.3;
+}
+.meeting-sidebar .meeting-date {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+  margin-top: 5px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Timer */
+.sidebar-timer-wrap {
+  padding: 14px 22px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.meeting-timer-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(200,169,97,0.2);
+  transition: all 0.3s;
+}
+.meeting-timer-bar:hover { background: rgba(200,169,97,0.1); }
+.meeting-timer-bar.running { background: rgba(181,84,91,0.2); border-color: var(--rose); }
+.timer-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transition: background 0.3s;
+}
+.meeting-timer-bar.running .timer-dot {
+  background: var(--rose);
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+.timer-display-lg {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+  letter-spacing: 2px;
+}
+.timer-label-sm {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.35);
+}
+
+/* Attendance */
+.sidebar-attendance {
+  padding: 12px 22px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.attendee-chip {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.attendee-chip.present { background: var(--sage); color: white; font-weight: 600; }
+.attendee-chip.absent { background: rgba(255,255,255,0.08); color: var(--warm-gray); }
+
+/* Zoom link */
+.zoom-bar {
+  padding: 10px 22px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.zoom-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: rgba(45,115,235,0.15);
+  border: 1px solid rgba(45,115,235,0.3);
+  color: #7ab3ff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.zoom-link-btn:hover { background: rgba(45,115,235,0.25); color: #a0cbff; }
+.zoom-link-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* Journal tabs */
+.journal-tabs { flex: 1; padding: 0 0 12px; overflow-y: auto; }
+.nav-section-label {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(200,169,97,0.5);
+  padding: 16px 22px 6px;
+  font-weight: 600;
+}
+.nav-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 8px 22px;
+}
+.journal-tab {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: all 0.25s;
+  border-left: 3px solid transparent;
+}
+.journal-tab:hover { background: rgba(255,255,255,0.04); border-left-color: rgba(200,169,97,0.3); }
+.journal-tab.active { background: rgba(200,169,97,0.08); border-left-color: var(--gold); }
+.journal-tab.completed { border-left-color: var(--sage); }
+.tab-marker {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.5);
+  transition: all 0.25s;
+}
+.journal-tab.active .tab-marker { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+.journal-tab.completed .tab-marker { background: var(--sage); border-color: var(--sage); color: white; }
+.tab-info { flex: 1; min-width: 0; }
+.tab-title { font-size: 0.76rem; font-weight: 500; color: rgba(255,255,255,0.7); line-height: 1.3; }
+.journal-tab.active .tab-title { color: var(--gold-light, #e8d5a0); font-weight: 600; }
+.tab-time { font-size: 0.58rem; color: rgba(255,255,255,0.3); margin-top: 1px; }
+
+.sidebar-footer-meeting {
+  padding: 12px 22px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sidebar-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid rgba(200,169,97,0.2);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.6);
+  transition: all 0.2s;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.sidebar-btn:hover { background: rgba(200,169,97,0.1); color: var(--gold-light, #e8d5a0); border-color: var(--gold); }
+
+/* Main content */
+.meeting-main-content {
+  margin-left: 270px;
+  padding: 28px 36px;
+  max-width: 920px;
+  min-height: 100vh;
+}
+
+/* Section cards */
+.section-card {
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 16px rgba(26,21,32,0.08);
+  overflow: hidden;
+  display: none;
+  border: 1px solid rgba(200,169,97,0.1);
+}
+.section-card.visible { display: block; animation: fadeIn 0.35s ease; }
+.section-card.all-visible { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
+
+.section-header {
+  padding: 20px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: white;
+  border-bottom: 1px solid var(--linen);
+  transition: background 0.2s;
+}
+.section-header:hover { background: var(--cream); }
+.section-header h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+}
+.section-time {
+  font-size: 0.72rem;
+  color: var(--warm-gray);
+  margin-left: 10px;
+  font-weight: 400;
+}
+
+.presenter-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.badge-chair { background: rgba(200,169,97,0.15); color: #8a6d2e; border: 1px solid rgba(200,169,97,0.3); }
+.badge-ed { background: rgba(181,84,91,0.1); color: var(--rose); border: 1px solid rgba(181,84,91,0.2); }
+.badge-director { background: rgba(122,154,126,0.12); color: #5a7a5e; border: 1px solid rgba(122,154,126,0.2); }
+.badge-secretary { background: rgba(107,76,122,0.1); color: var(--plum); border: 1px solid rgba(107,76,122,0.2); }
+.badge-board { background: rgba(44,62,90,0.08); color: var(--navy, #2c3e5a); border: 1px solid rgba(44,62,90,0.15); }
+.badge-collab { background: #f0f0e8; color: var(--slate); border: 1px solid #e0ddd5; }
+
+.section-body { padding: 22px 28px; }
+
+/* Talking points */
+.talking-points {
+  background: var(--cream);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin: 14px 0;
+  border: 1px solid var(--linen);
+}
+.talking-points h4 {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--slate);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.talking-points ul { list-style: none; padding: 0; }
+.talking-points li {
+  padding: 5px 0 5px 18px;
+  position: relative;
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--charcoal);
+}
+.talking-points li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 13px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+/* Blurb box */
+.blurb-box {
+  background: linear-gradient(135deg, #faf8f2 0%, #f5f0ea 100%);
+  border-left: 3px solid var(--gold);
+  padding: 16px 20px;
+  margin: 14px 0;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.86rem;
+  line-height: 1.7;
+}
+.blurb-box strong { color: var(--ink); }
+
+/* Notes area */
+.notes-label {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--warm-gray);
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.notes-label svg { width: 14px; height: 14px; opacity: 0.5; }
+.notes-area {
+  width: 100%;
+  min-height: 80px;
+  border: 1px solid #e0ddd5;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.02rem;
+  resize: vertical;
+  background: #fffefa;
+  margin: 8px 0;
+  transition: all 0.3s;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.notes-area:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(200,169,97,0.15);
+  background: white;
+}
+
+/* Vote / motion container */
+.vote-container {
+  background: var(--cream);
+  border-radius: 8px;
+  padding: 20px 22px;
+  margin: 16px 0;
+  border: 1px solid var(--linen);
+}
+.vote-container h4 {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.vote-options { display: flex; flex-direction: column; gap: 8px; }
+.vote-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e0ddd5;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.vote-option:hover { border-color: var(--gold); box-shadow: 0 1px 3px rgba(26,21,32,0.06); }
+.vote-option.selected { border-color: var(--gold); background: rgba(200,169,97,0.15); }
+.vote-option input[type="radio"] { accent-color: var(--gold); }
+
+/* Discussion prompts */
+.discussion-prompt {
+  background: white;
+  border: 1px solid var(--linen);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 8px 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+.discussion-prompt strong { color: var(--gold); }
+
+/* Breakout grid */
+.breakout-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 12px 0; }
+.breakout-card {
+  background: white;
+  border: 1px solid var(--linen);
+  border-radius: 8px;
+  padding: 14px;
+}
+.breakout-card h5 {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--slate);
+  margin-bottom: 8px;
+}
+
+/* Hackathon slots */
+.hackathon-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.slot-number {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.slot-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #e0ddd5;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: white;
+}
+.slot-input:focus { outline: none; border-color: var(--gold); }
+.slot-remove {
+  background: none;
+  border: none;
+  color: var(--warm-gray);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 8px;
+}
+
+/* Asset link */
+.asset-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--gold-glow, rgba(200,169,97,0.15));
+  border: 1px solid rgba(200,169,97,0.3);
+  border-radius: 6px;
+  color: #8a6d2e;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  margin: 8px 0;
+}
+.asset-link:hover { background: rgba(200,169,97,0.25); }
+.asset-link svg { width: 14px; height: 14px; }
+
+/* Section divider */
+.section-divider-bar {
+  text-align: center;
+  padding: 16px 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--warm-gray);
+  position: relative;
+}
+.section-divider-bar::before,
+.section-divider-bar::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 120px);
+  height: 1px;
+  background: var(--linen);
+}
+.section-divider-bar::before { left: 0; }
+.section-divider-bar::after { right: 0; }
+
+/* Action items */
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--linen);
+}
+.action-item:last-child { border-bottom: none; }
+
+/* Writein field */
+.writein-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.writein-field label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--slate);
+  white-space: nowrap;
+}
+.writein-field input {
+  flex: 1;
+  max-width: 240px;
+  padding: 6px 12px;
+  border: 1px solid #e0ddd5;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+.writein-field input:focus { outline: none; border-color: var(--gold); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .meeting-sidebar { width: 100%; height: auto; position: relative; }
+  .meeting-main-content { margin-left: 0; padding: 16px; }
+  .section-header { flex-direction: column; gap: 8px; align-items: flex-start; }
+  .breakout-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="meeting-app">
+
+<!-- SIDEBAR -->
+<nav class="meeting-sidebar">
+  <div class="sidebar-header">
+    <h1>The Practice Center</h1>
+    <div class="meeting-date">Special Board Meeting: February 28, 2026</div>
+    <div style="font-size:0.62rem;color:rgba(255,255,255,0.35);margin-top:3px;">11:00 AM CT: Open Session (Guests Welcome)<br>12:00 PM CT: Closed Board Session</div>
+  </div>
+
+  <!-- Master Timer -->
+  <div class="sidebar-timer-wrap">
+    <div class="meeting-timer-bar" id="timerBar" onclick="toggleMasterTimer()">
+      <div class="timer-dot"></div>
+      <div>
+        <div class="timer-display-lg" id="masterTimer">0:00:00</div>
+        <div class="timer-label-sm" id="timerLabel">Click to start</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance -->
+  <div class="sidebar-attendance">
+    <div style="font-size:0.58rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(200,169,97,0.5);margin-bottom:8px;">Attendance (<span id="attendCount">0</span>/6)</div>
+    <div id="attendanceList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    <div style="margin-top:8px;display:flex;gap:6px;align-items:center;">
+      <input type="text" id="guestName" placeholder="Guest name" style="flex:1;padding:4px 8px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:white;font-size:0.7rem;">
+      <button class="sidebar-btn" style="padding:4px 8px;font-size:0.6rem;" onclick="addGuest()">+ Guest</button>
+    </div>
+  </div>
+
+  <!-- Zoom Link -->
+  <div class="zoom-bar">
+    <a href="https://us02web.zoom.us/j/87830852593" target="_blank" class="zoom-link-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94M2 2l20 20M16.5 16.5l-4.5-4.5M11 5C7 5 3.5 8 3.5 12c0 1.7.6 3.3 1.5 4.5L2 20h6.5l.5-.5A7.5 7.5 0 0 0 11 5"/></svg>
+      Join Zoom Meeting
+    </a>
+  </div>
+
+  <!-- Consent Agenda Package -->
+  <div style="padding:12px 22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+    <div style="font-size:0.58rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(122,154,126,0.8);margin-bottom:8px;">Consent Agenda</div>
+    <div id="consentPackage" style="display:flex;flex-direction:column;gap:6px;">
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:5px;background:rgba(255,255,255,0.04);border-left:3px solid var(--sage);cursor:pointer;font-size:0.75rem;color:rgba(255,255,255,0.7);">
+        <input type="checkbox" class="consent-check" checked style="accent-color:var(--sage);">
+        Welcome + Call to Order
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:5px;background:rgba(255,255,255,0.04);border-left:3px solid var(--sage);cursor:pointer;font-size:0.75rem;color:rgba(255,255,255,0.7);">
+        <input type="checkbox" class="consent-check" checked style="accent-color:var(--sage);">
+        Approve Feb 7 Meeting Minutes
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:5px;background:rgba(255,255,255,0.04);border-left:3px solid var(--sage);cursor:pointer;font-size:0.75rem;color:rgba(255,255,255,0.7);">
+        <input type="checkbox" class="consent-check" checked style="accent-color:var(--sage);">
+        Closing Circle
+      </label>
+    </div>
+    <button class="sidebar-btn" style="margin-top:8px;width:100%;background:rgba(122,154,126,0.15);border:1px solid rgba(122,154,126,0.3);color:var(--sage);" onclick="approveConsentPackage()">
+      Approve Consent Package
+    </button>
+    <div id="consentResult" style="display:none;margin-top:6px;font-size:0.68rem;color:var(--sage);text-align:center;"></div>
+  </div>
+
+  <!-- Journal Tabs -->
+  <div class="journal-tabs" id="journalTabs">
+    <div class="nav-section-label">Pre-Meeting</div>
+    <div class="journal-tab active" data-section="attendance" onclick="navigateTo('attendance')">
+      <div class="tab-marker">A</div>
+      <div class="tab-info"><div class="tab-title">Attendance</div></div>
+    </div>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section-label">Open Session: Guests Welcome</div>
+
+    <div class="journal-tab" data-section="welcome" onclick="navigateTo('welcome')">
+      <div class="tab-marker">1</div>
+      <div class="tab-info">
+        <div class="tab-title">Welcome + Call to Order</div>
+        <div class="tab-time">5 min</div>
+      </div>
+    </div>
+    <div class="journal-tab" data-section="ed" onclick="navigateTo('ed')">
+      <div class="tab-marker">2</div>
+      <div class="tab-info">
+        <div class="tab-title">ED + Board President Updates</div>
+        <div class="tab-time">15 min</div>
+      </div>
+    </div>
+    <div class="journal-tab" data-section="adeq" onclick="navigateTo('adeq')">
+      <div class="tab-marker">3</div>
+      <div class="tab-info">
+        <div class="tab-title">AIdedEQ Walkthrough</div>
+        <div class="tab-time">10 min</div>
+      </div>
+    </div>
+    <div class="journal-tab" data-section="gabby" onclick="navigateTo('gabby')">
+      <div class="tab-marker">4</div>
+      <div class="tab-info">
+        <div class="tab-title">AIdedEQ Tools</div>
+        <div class="tab-time">10 min</div>
+      </div>
+    </div>
+    <div class="journal-tab" data-section="kailani" onclick="navigateTo('kailani')">
+      <div class="tab-marker">5</div>
+      <div class="tab-info">
+        <div class="tab-title">Marketing + Our Edge</div>
+        <div class="tab-time">10 min</div>
+      </div>
+    </div>
+    <div class="journal-tab" data-section="gwv" onclick="navigateTo('gwv')">
+      <div class="tab-marker">6</div>
+      <div class="tab-info">
+        <div class="tab-title">Girls Who Vibe</div>
+        <div class="tab-time">10 min</div>
+      </div>
+    </div>
+    <div class="journal-tab" data-section="discussion" onclick="navigateTo('discussion')">
+      <div class="tab-marker">7</div>
+      <div class="tab-info">
+        <div class="tab-title">Open Discussion</div>
+        <div class="tab-time">15 min</div>
+      </div>
+    </div>
+
+    <div class="nav-divider"></div>
+    <div class="nav-section-label">Board Business: Internal</div>
+
+    <div class="journal-tab" data-section="revenue" onclick="navigateTo('revenue')">
+      <div class="tab-marker">8</div>
+      <div class="tab-info">
+        <div class="tab-title">Revenue + Funding</div>
+        <div class="tab-time">10 min</div>
+      </div>
+    </div>
+    <div class="journal-tab" data-section="business" onclick="navigateTo('business')">
+      <div class="tab-marker">9</div>
+      <div class="tab-info">
+        <div class="tab-title">Board Business</div>
+      </div>
+    </div>
+    <div class="journal-tab" data-section="closing" onclick="navigateTo('closing')">
+      <div class="tab-marker">10</div>
+      <div class="tab-info">
+        <div class="tab-title">Closing Circle</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer-meeting">
+    <button class="sidebar-btn" onclick="toggleView()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span id="viewToggleLabel">Show All Sections</span>
+    </button>
+    <a href="dashboard.html" class="sidebar-btn">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+      Back to Dashboard
+    </a>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="meeting-main-content">
+
+  <!-- ATTENDANCE -->
+  <div class="section-card visible" id="section-attendance" style="display:block;">
+    <div class="section-header" onclick="toggleSection(this)">
+      <h2>Meeting Attendance</h2>
+      <span style="font-size:0.8rem;color:var(--warm-gray);" id="attendanceCountMain">0 / 6 present</span>
+    </div>
+    <div class="section-body">
+      <p style="font-size:0.85rem;color:var(--warm-gray);margin-bottom:12px;">Click each member as they join the call. Quorum requires 4 of 6 board members.</p>
+      <div id="attendanceGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
+      <div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="guestNameMain" placeholder="Guest name" style="padding:6px 12px;border:1px solid #e0ddd5;border-radius:6px;font-size:0.82rem;width:160px;">
+        <input type="text" id="guestOrgMain" placeholder="Organization" style="padding:6px 12px;border:1px solid #e0ddd5;border-radius:6px;font-size:0.82rem;width:160px;">
+        <button class="btn btn-outline btn-sm" onclick="addGuestMain()">+ Add Guest</button>
+      </div>
+      <div id="guestList" style="margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <!-- WELCOME + CALL TO ORDER -->
+  <div class="section-card" id="section-welcome">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2>Welcome + Call to Order</h2>
+        <span class="section-time">5 min</span>
+      </div>
+      <span class="presenter-badge badge-chair">Alison: Board Chair</span>
+    </div>
+    <div class="section-body">
+      <div class="talking-points">
+        <h4>Alison's Flow</h4>
+        <ul>
+          <li>Call the meeting to order: state the date, time, and confirm quorum</li>
+          <li>Guided centering moment: 30 to 60 seconds of breathwork or grounding</li>
+          <li>Welcome all guests: ask each guest to briefly introduce themselves (name, org, what drew them here)</li>
+          <li>Share purpose of today's meeting: "From mission to practice to impact"</li>
+          <li>Pass to JoYi for Executive Director updates</li>
+        </ul>
+      </div>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Alison's Personal Notes
+      </div>
+      <textarea class="notes-area" placeholder="Welcome notes, special acknowledgments, or centering script..."></textarea>
+    </div>
+  </div>
+
+  <!-- ED + BOARD PRESIDENT UPDATES -->
+  <div class="section-card" id="section-ed">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2>ED + Board President Updates</h2>
+        <span class="section-time">15 min</span>
+      </div>
+      <span class="presenter-badge badge-ed">JoYi: ED &amp; Board President</span>
+    </div>
+    <div class="section-body">
+      <div class="blurb-box">
+        <strong>Context for the Board:</strong> Since our last meeting, The Practice Center has expanded its mission by creating a new corporate arm: <strong>AIdedEQ (AI-aided Emotional Intelligence)</strong>. This is the bridge between our human-centered facilitation philosophy and the future of how technology can amplify connection, not replace it. JoYi will walk the board through what AIdedEQ is, why now, and what it means for our trajectory.
+      </div>
+
+      <div class="talking-points">
+        <h4>JoYi's Talking Points</h4>
+        <ul>
+          <li><strong>The big picture:</strong> TPC has always operated at the intersection of emotional intelligence and community. AIdedEQ formalizes this into a scalable technology arm.</li>
+          <li><strong>Why now:</strong> There is a massive market gap. AI tools are being built without emotional intelligence at the center. Organizations are adopting AI but losing the human connection. We are filling that gap.</li>
+          <li><strong>The hackathon:</strong> We are submitting to a hackathon March 6 through 8 (final submission March 8 at 12pm PT). This is our moment to put AIdedEQ tools in front of a wider audience and get feedback from builders and funders.</li>
+          <li><strong>How this connects to TPC:</strong> AIdedEQ is the practice arm's technology partner. Everything we build is rooted in the facilitation, connection, and human-centered frameworks TPC has developed.</li>
+        </ul>
+      </div>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        JoYi's Personal Notes
+      </div>
+      <textarea class="notes-area" placeholder="Additional updates, metrics, or announcements..."></textarea>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+        Board Q+A / Discussion Notes
+      </div>
+      <textarea class="notes-area" placeholder="Questions or comments from the board during ED updates..."></textarea>
+    </div>
+  </div>
+
+  <!-- AIDEDEQ WALKTHROUGH -->
+  <div class="section-card" id="section-adeq">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2>AIdedEQ: Website Walkthrough</h2>
+        <span class="section-time">10 min</span>
+      </div>
+      <span class="presenter-badge badge-ed">JoYi: ED &amp; Board President</span>
+    </div>
+    <div class="section-body">
+      <div style="margin-bottom:14px;">
+        <a href="https://aidedeq.com" target="_blank" class="asset-link">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          aidedeq.com: Live Walkthrough
+        </a>
+      </div>
+
+      <div class="blurb-box">
+        <strong>What is AIdedEQ?</strong> AIdedEQ stands for AI-aided Emotional Intelligence. It is a suite of tools and frameworks that infuse emotional intelligence into technology-driven experiences. Where most AI tools optimize for efficiency, AIdedEQ optimizes for connection: helping facilitators, educators, nonprofit leaders, and community builders do their deepest work with technology as a partner, not a replacement.
+      </div>
+
+      <div class="talking-points">
+        <h4>Website Walkthrough Guide: Section by Section</h4>
+        <ul>
+          <li><strong>Mission + Vision:</strong> Our mission is to ensure that as AI transforms how we work and connect, emotional intelligence remains at the center.</li>
+          <li><strong>Who We Serve:</strong> Facilitators, nonprofit leaders, community organizers, educators, and organizations navigating the AI transition who refuse to lose the human element.</li>
+          <li><strong>Our Focus:</strong> Building AI-powered tools rooted in facilitation best practices: tools like the Pocket Facilitator that guide real-time group dynamics, not just content delivery.</li>
+          <li><strong>How We Build:</strong> Heart-first, tech-second. Every tool starts with a human need identified through real facilitation work at TPC.</li>
+          <li><strong>How to Get Involved:</strong> Join as a beta tester, become a facilitation partner, fund the mission, contribute code with purpose.</li>
+        </ul>
+      </div>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        JoYi's Walkthrough Notes
+      </div>
+      <textarea class="notes-area" placeholder="Notes for specific pages to highlight, demo flow, or talking points during the live walkthrough..."></textarea>
+    </div>
+  </div>
+
+  <!-- GABBY: AIDEDEQ TOOLS -->
+  <div class="section-card" id="section-gabby">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2>AIdedEQ Tools: Mission to Practice</h2>
+        <span class="section-time">10 min</span>
+      </div>
+      <span class="presenter-badge badge-director">Gabby: Director, AIdedEQ</span>
+    </div>
+    <div class="section-body">
+      <div class="blurb-box">
+        <strong>Gabby's Role:</strong> As Director of AIdedEQ, Gabby translates our mission into usable tools. She joined TPC as a contract employee effective 2/24/2026 for the next three months. This section is about showing the board (and guests) what "mission to practice" actually looks like: real tools, real applications, real impact.
+      </div>
+
+      <div class="talking-points">
+        <h4>Presentation Guidelines for Gabby</h4>
+        <ul>
+          <li><strong>Start with mission-to-practice:</strong> Open by connecting TPC's facilitation philosophy to the tools you are about to show. "Everything we build starts from a real moment in a real room with real people."</li>
+          <li><strong>The Pocket Facilitator:</strong> Walk through what it does, who it is for, and a quick demo or screenshot. Emphasize how it reduces facilitator anxiety and increases group connection.</li>
+          <li><strong>Other tools in development:</strong> Briefly mention any additional tools in the pipeline. Keep it high-level: save deep dives for follow-up.</li>
+          <li><strong>Hackathon framing:</strong> Explain that the community will help vote on which tool(s) we present at the March 6 through 8 hackathon. Frame the vote as collaborative.</li>
+          <li><strong>Keep it grounded:</strong> Avoid jargon. Speak to the WHY behind each tool, not just the WHAT. Every tool should connect back to a human need.</li>
+        </ul>
+      </div>
+
+      <!-- Hackathon Submission Builder -->
+      <div class="vote-container">
+        <h4>Hackathon Submission Builder</h4>
+        <p style="font-size:0.82rem;color:var(--warm-gray);margin-bottom:12px;">Gabby: add tool/project options below (up to 10). After the meeting, the ballot will be created and sent out by 9 PM. Votes close, and a group meeting for all participants is scheduled for Monday, March 2 throughout the day.</p>
+
+        <div id="hackathonSlots">
+          <div class="hackathon-slot">
+            <div class="slot-number">1</div>
+            <input class="slot-input" type="text" placeholder="Enter tool or project name...">
+            <button class="slot-remove" onclick="removeSlot(this)">x</button>
+          </div>
+          <div class="hackathon-slot">
+            <div class="slot-number">2</div>
+            <input class="slot-input" type="text" placeholder="Enter tool or project name...">
+            <button class="slot-remove" onclick="removeSlot(this)">x</button>
+          </div>
+          <div class="hackathon-slot">
+            <div class="slot-number">3</div>
+            <input class="slot-input" type="text" placeholder="Enter tool or project name...">
+            <button class="slot-remove" onclick="removeSlot(this)">x</button>
+          </div>
+        </div>
+
+        <div style="margin-top:8px;">
+          <button class="btn btn-outline btn-sm" onclick="addHackathonSlot()">+ Add Option</button>
+        </div>
+
+        <div style="background:white;border:1px solid #e0ddd5;border-radius:6px;padding:14px 16px;margin-top:12px;">
+          <p style="font-size:0.82rem;color:var(--slate);line-height:1.6;">
+            <strong>After this meeting:</strong><br>
+            <span style="color:var(--warm-gray);">
+            Ballot created and sent by 9 PM tonight<br>
+            Votes close + participation form sent<br>
+            Team meeting: Monday, March 2 (all day, flexible join)<br>
+            Final hackathon submission: March 8, 12:00 PM Pacific
+            </span>
+          </p>
+        </div>
+      </div>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Gabby's Presentation Notes
+      </div>
+      <textarea class="notes-area" placeholder="Demo flow, specific features to highlight, or talking points..."></textarea>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+        Board Feedback
+      </div>
+      <textarea class="notes-area" placeholder="Board and guest feedback on the tools..."></textarea>
+    </div>
+  </div>
+
+  <!-- KAILANI: MARKETING -->
+  <div class="section-card" id="section-kailani">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2>Marketing, Market Research + Our Edge</h2>
+        <span class="section-time">10 min</span>
+      </div>
+      <span class="presenter-badge badge-secretary">Kailani: Secretary</span>
+    </div>
+    <div class="section-body">
+      <div class="blurb-box">
+        <strong>Kailani's Focus:</strong> Kailani brings the data and the strategy. This section covers where we stand in the market, who our competitors are (and why we are different), and what our marketing engine looks like going forward. As Secretary, Kailani also ensures this is captured for the record.
+      </div>
+
+      <div class="talking-points">
+        <h4>Kailani's Talking Points</h4>
+        <ul>
+          <li><strong>Market landscape:</strong> Where does AIdedEQ/TPC sit? What does the competitive terrain look like for EQ-centered AI tools?</li>
+          <li><strong>Our edge:</strong> We come from practice, not theory. Our tools are built by facilitators, for facilitators. That is a differentiator no pure-tech company can replicate.</li>
+          <li><strong>Target audiences:</strong> Who are we marketing to first? What channels are we prioritizing?</li>
+          <li><strong>Key metrics + goals:</strong> What does success look like in the next quarter?</li>
+        </ul>
+      </div>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Kailani's Personal Notes
+      </div>
+      <textarea class="notes-area" placeholder="Market research findings, data points, or strategy notes..."></textarea>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+        Board Discussion Notes
+      </div>
+      <textarea class="notes-area" placeholder="Questions and feedback on marketing strategy..."></textarea>
+    </div>
+  </div>
+
+  <!-- GIRLS WHO VIBE -->
+  <div class="section-card" id="section-gwv">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2>Girls Who Vibe: Program Update</h2>
+        <span class="section-time">10 min</span>
+      </div>
+      <span class="presenter-badge badge-board">TPC Board</span>
+    </div>
+    <div class="section-body">
+      <div class="writein-field">
+        <label>Presented by:</label>
+        <input type="text" placeholder="Write in presenter name...">
+      </div>
+
+      <div class="blurb-box">
+        <strong>Girls Who Vibe</strong> is TPC's flagship community program. This update covers the current status, the spring break playbook, and how GWV intersects with AIdedEQ's mission. This is where heart meets hustle.
+      </div>
+
+      <div class="talking-points">
+        <h4>GWV Update Points</h4>
+        <ul>
+          <li>Spring break playbook status and upcoming activations</li>
+          <li>Community engagement metrics and growth</li>
+          <li>How GWV programs feed into AIdedEQ tool development</li>
+          <li>Opportunities for guest involvement or partnership</li>
+        </ul>
+      </div>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        GWV Presenter Notes
+      </div>
+      <textarea class="notes-area" placeholder="Girls Who Vibe updates, metrics, and spring break playbook notes..."></textarea>
+    </div>
+  </div>
+
+  <!-- OPEN DISCUSSION -->
+  <div class="section-card" id="section-discussion">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2>Open Discussion + Small Group Time</h2>
+        <span class="section-time">15 min</span>
+      </div>
+      <span class="presenter-badge badge-collab">Collaborative</span>
+    </div>
+    <div class="section-body">
+      <div class="writein-field">
+        <label>Facilitated by:</label>
+        <input type="text" placeholder="Write in facilitator name...">
+      </div>
+
+      <p style="font-size:0.85rem;color:var(--warm-gray);margin-bottom:12px;">Facilitated dialogue designed to draw out connection, diverse perspectives, and cooperative thinking. Use these prompts or adapt in the moment.</p>
+
+      <div class="discussion-prompt">
+        <p><strong>Prompt 1:</strong> "After what you have seen and heard today, what excites you most about the intersection of emotional intelligence and technology? What makes you nervous?"</p>
+      </div>
+      <div class="discussion-prompt">
+        <p><strong>Prompt 2:</strong> "If you could put one AIdedEQ tool in the hands of someone you know tomorrow, who would it be and why?"</p>
+      </div>
+      <div class="discussion-prompt">
+        <p><strong>Prompt 3:</strong> "What is one thing from your own work or community that you think TPC/AIdedEQ should know about? A need you have seen, a gap you have felt, an idea you have been sitting on?"</p>
+      </div>
+      <div class="discussion-prompt">
+        <p><strong>Prompt 4:</strong> "How do we keep the soul in the machine? What principles should guide us as we grow?"</p>
+      </div>
+
+      <div style="margin-top:16px;">
+        <h4 style="font-family:'Playfair Display',serif;font-size:0.86rem;color:var(--slate);margin-bottom:10px;">Small Group Breakout: 5 min</h4>
+        <p style="font-size:0.82rem;color:var(--warm-gray);margin-bottom:10px;">Split into breakout rooms of 3 to 4 people. Each group picks one prompt above and discusses. One person reports back a key insight.</p>
+      </div>
+
+      <div class="breakout-grid">
+        <div class="breakout-card">
+          <h5>Group 1</h5>
+          <textarea class="notes-area" style="min-height:50px;" placeholder="Key insight from Group 1..."></textarea>
+        </div>
+        <div class="breakout-card">
+          <h5>Group 2</h5>
+          <textarea class="notes-area" style="min-height:50px;" placeholder="Key insight from Group 2..."></textarea>
+        </div>
+        <div class="breakout-card">
+          <h5>Group 3</h5>
+          <textarea class="notes-area" style="min-height:50px;" placeholder="Key insight from Group 3..."></textarea>
+        </div>
+      </div>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+        Full Discussion Notes
+      </div>
+      <textarea class="notes-area" placeholder="Capture the conversation, themes, and insights from open discussion..."></textarea>
+    </div>
+  </div>
+
+  <!-- DIVIDER: Board Business -->
+  <div class="section-divider-bar" id="section-divider-internal">Board Business: Internal (12:00 PM CT)</div>
+
+  <!-- REVENUE + FUNDING -->
+  <div class="section-card" id="section-revenue">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2>Revenue + Funding</h2>
+        <span class="section-time">10 min</span>
+      </div>
+      <span class="presenter-badge badge-chair">Alison + Team</span>
+    </div>
+    <div class="section-body">
+      <div class="blurb-box">
+        <strong>The money conversation.</strong> This is where we get real about what we need, where it is coming from, and how people can participate. Alison leads this section with support from the team.
+      </div>
+
+      <div class="talking-points">
+        <h4>Revenue Discussion Points</h4>
+        <ul>
+          <li><strong>Current financial position:</strong> Where are we today? (Alison to update)</li>
+          <li><strong>Funding goals:</strong> What do we need in the next 90 days? The next year?</li>
+          <li><strong>Funding sources:</strong> Grants, partnerships, sponsorships, community support, earned revenue from tools</li>
+          <li><strong>Girls Who Code / coding partnerships:</strong> Specific funding and partnership opportunities in the coding/tech education space</li>
+          <li><strong>How people can support:</strong> Clear, specific asks: time, money, connections, in-kind contributions</li>
+          <li><strong>Revenue model for AIdedEQ tools:</strong> Freemium? Subscription? Grant-funded distribution?</li>
+        </ul>
+      </div>
+
+      <div class="vote-container">
+        <h4>Priority Funding Focus: Where should we concentrate first?</h4>
+        <div class="vote-options" id="fundingVote">
+          <label class="vote-option" onclick="castVote('fundingVote', this)">
+            <input type="radio" name="funding" value="grants">
+            <div style="flex:1;"><div style="font-weight:600;font-size:0.86rem;">Grants + Foundation Funding</div></div>
+          </label>
+          <label class="vote-option" onclick="castVote('fundingVote', this)">
+            <input type="radio" name="funding" value="partnerships">
+            <div style="flex:1;"><div style="font-weight:600;font-size:0.86rem;">Strategic Partnerships</div></div>
+          </label>
+          <label class="vote-option" onclick="castVote('fundingVote', this)">
+            <input type="radio" name="funding" value="earned">
+            <div style="flex:1;"><div style="font-weight:600;font-size:0.86rem;">Earned Revenue (Tool Subscriptions)</div></div>
+          </label>
+          <label class="vote-option" onclick="castVote('fundingVote', this)">
+            <input type="radio" name="funding" value="community">
+            <div style="flex:1;"><div style="font-weight:600;font-size:0.86rem;">Community Fundraising + Crowdfunding</div></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Alison's Revenue Notes
+      </div>
+      <textarea class="notes-area" placeholder="Financial figures, funding pipeline status, specific asks..."></textarea>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+        Board Discussion on Revenue
+      </div>
+      <textarea class="notes-area" placeholder="Ideas, commitments, and action items from revenue discussion..."></textarea>
+    </div>
+  </div>
+
+  <!-- BOARD BUSINESS -->
+  <div class="section-card" id="section-business">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2>Internal Board Business</h2>
+      </div>
+      <span style="font-size:0.68rem;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--ink);color:var(--gold);border:1px solid rgba(200,169,97,0.3);">Board Only</span>
+    </div>
+    <div class="section-body">
+      <div class="talking-points">
+        <h4>Standing Agenda Items</h4>
+        <ul>
+          <li>Approval of previous meeting minutes</li>
+          <li>New business items</li>
+          <li>AIdedEQ corporate arm: any formal motions needed?</li>
+          <li>Bylaw updates or amendments (if any)</li>
+          <li>Committee reports (if applicable)</li>
+        </ul>
+      </div>
+
+      <div class="vote-container">
+        <h4>Board Motions + Votes</h4>
+        <div id="motionsContainer">
+          <div class="action-item">
+            <span style="font-size:0.85rem;flex:1;">Motion to approve previous meeting minutes</span>
+            <button class="btn btn-sm" style="background:var(--sage);color:white;border:none;border-radius:6px;padding:4px 12px;font-size:0.72rem;cursor:pointer;" onclick="recordVote(this, 'Approved')">Approve</button>
+            <button class="btn btn-outline btn-sm" onclick="recordVote(this, 'Tabled')">Table</button>
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+          <input type="text" id="newMotion" placeholder="Add a new motion..." style="flex:1;padding:8px 12px;border:1px solid #e0ddd5;border-radius:6px;font-size:0.82rem;">
+          <button class="btn btn-outline btn-sm" onclick="addMotion()">+ Add Motion</button>
+        </div>
+      </div>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        New Business Notes
+      </div>
+      <textarea class="notes-area" placeholder="New business items, motions, or topics..."></textarea>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+        Board Discussion Notes
+      </div>
+      <textarea class="notes-area" placeholder="Internal board discussion notes..."></textarea>
+
+      <!-- Decision Recording Panel -->
+      <div style="margin-top:16px;padding:16px;background:#faf8f5;border-radius:8px;border-left:4px solid var(--gold);">
+        <h4 style="margin-bottom:12px;color:var(--ink);font-family:'Playfair Display',serif;">Record Decision</h4>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--warm-gray);display:block;margin-bottom:4px;">Decision Statement</label>
+          <textarea id="decisionStatement" class="notes-area" placeholder="What was decided?" style="min-height:60px;"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+          <div style="flex:1;">
+            <label style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--warm-gray);display:block;margin-bottom:4px;">Type</label>
+            <select id="decisionType" style="width:100%;padding:8px;border:1px solid #e0ddd5;border-radius:6px;font-size:0.82rem;">
+              <option value="approve">Approve</option>
+              <option value="decline">Decline</option>
+              <option value="defer">Defer</option>
+              <option value="direction_given">Direction Given</option>
+            </select>
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--warm-gray);display:block;margin-bottom:4px;">Owner</label>
+            <select id="decisionOwner" style="width:100%;padding:8px;border:1px solid #e0ddd5;border-radius:6px;font-size:0.82rem;">
+              <option value="">Select owner...</option>
+              <option value="JoYi">JoYi</option>
+              <option value="Alison">Alison</option>
+              <option value="Kailani">Kailani</option>
+              <option value="Gabby">Gabby</option>
+              <option value="Jay">Jay</option>
+              <option value="Kobe">Kobe</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--warm-gray);display:block;margin-bottom:4px;">Rationale (1-2 lines)</label>
+          <textarea id="decisionRationale" class="notes-area" placeholder="Why was this decision made?" style="min-height:50px;"></textarea>
+        </div>
+        <button class="btn btn-sm" style="background:var(--gold);color:var(--ink);border:none;border-radius:6px;padding:6px 16px;font-size:0.75rem;font-weight:600;cursor:pointer;" onclick="saveDecision()">Save Decision</button>
+        <div id="savedDecisions" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLOSING CIRCLE -->
+  <div class="section-card" id="section-closing">
+    <div class="section-header" onclick="toggleSection(this)">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2>Closing Circle</h2>
+      </div>
+      <span class="presenter-badge badge-chair">Alison: Board Chair</span>
+    </div>
+    <div class="section-body">
+      <div class="talking-points">
+        <h4>Closing Flow</h4>
+        <ul>
+          <li>Recap key decisions and action items from today</li>
+          <li>Each board member shares one word or phrase about how they are leaving this meeting</li>
+          <li>Confirm next meeting date</li>
+          <li>Motion to adjourn</li>
+        </ul>
+      </div>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+        Action Items Summary
+      </div>
+      <div id="actionItemsSummary">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+          <input type="text" id="newActionItem" placeholder="Add action item..." style="flex:2;min-width:180px;padding:8px 12px;border:1px solid #e0ddd5;border-radius:6px;font-size:0.82rem;">
+          <input type="text" id="newActionOwner" placeholder="Owner" style="flex:0 0 100px;padding:8px 12px;border:1px solid #e0ddd5;border-radius:6px;font-size:0.82rem;">
+          <input type="date" id="newActionDue" style="flex:0 0 130px;padding:8px 12px;border:1px solid #e0ddd5;border-radius:6px;font-size:0.82rem;">
+          <button class="btn btn-sm" style="background:var(--gold);color:var(--ink);border:none;border-radius:6px;padding:6px 14px;font-size:0.75rem;font-weight:600;cursor:pointer;" onclick="addActionItem()">+ Add</button>
+        </div>
+        <div id="actionItemsList"></div>
+      </div>
+
+      <div class="notes-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Closing Notes
+      </div>
+      <textarea class="notes-area" placeholder="Closing remarks, next meeting date, final thoughts..."></textarea>
+    </div>
+  </div>
+
+</div><!-- end main-content -->
+</div><!-- end meeting-app -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/utils.js"></script>
+<script>
+// STATE
+let masterSeconds = 0;
+let masterRunning = false;
+let masterInterval = null;
+let attendance = {};
+let guests = [];
+let showAll = false;
+const boardMembers = ['JoYi', 'Alison', 'Kailani', 'Gabby', 'Jay', 'Kobe'];
+
+// INIT
+(async () => {
+  await Auth.init();
+  renderAttendance();
+  renderAttendanceGrid();
+
+  // V2: Load sidebar tabs dynamically from DB agenda items.
+  // For V1 (Feb 28, 2026), sidebar tabs and section cards are hardcoded
+  // with rich content specific to this meeting's agenda.
+  // Future meetings will auto-generate tabs and section cards from DB.
+})();
+
+// MASTER TIMER
+function toggleMasterTimer() {
+  const bar = document.getElementById('timerBar');
+  if (masterRunning) {
+    clearInterval(masterInterval);
+    masterRunning = false;
+    bar.classList.remove('running');
+    document.getElementById('timerLabel').textContent = 'Paused: click to resume';
+  } else {
+    masterInterval = setInterval(() => {
+      masterSeconds++;
+      const h = Math.floor(masterSeconds / 3600);
+      const m = Math.floor((masterSeconds % 3600) / 60);
+      const s = masterSeconds % 60;
+      document.getElementById('masterTimer').textContent =
+        `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }, 1000);
+    masterRunning = true;
+    bar.classList.add('running');
+    document.getElementById('timerLabel').textContent = 'Recording: click to pause';
+  }
+}
+
+// ATTENDANCE (sidebar chips)
+function renderAttendance() {
+  const container = document.getElementById('attendanceList');
+  container.innerHTML = boardMembers.map(name => {
+    const present = attendance[name];
+    return `<div class="attendee-chip ${present ? 'present' : 'absent'}" onclick="toggleAttendance('${name}')">${name}</div>`;
+  }).join('');
+  const count = Object.values(attendance).filter(Boolean).length;
+  document.getElementById('attendCount').textContent = count;
+  document.getElementById('attendanceCountMain').textContent = `${count} / 6 present${count >= 4 ? ' (Quorum met)' : ''}`;
+}
+
+function toggleAttendance(name) {
+  attendance[name] = !attendance[name];
+  renderAttendance();
+  renderAttendanceGrid();
+}
+
+// ATTENDANCE GRID (main content)
+function renderAttendanceGrid() {
+  const grid = document.getElementById('attendanceGrid');
+  grid.innerHTML = boardMembers.map(name => {
+    const present = attendance[name];
+    return `
+      <div onclick="toggleAttendance('${name}')" style="
+        display:flex;align-items:center;gap:10px;padding:12px 16px;
+        border-radius:8px;cursor:pointer;transition:all 0.2s;
+        background:${present ? 'rgba(122,154,126,0.12)' : 'white'};
+        border:1px solid ${present ? 'var(--sage)' : '#e0ddd5'};
+      ">
+        <div style="width:10px;height:10px;border-radius:50%;background:${present ? 'var(--sage)' : '#ddd'};transition:0.2s;"></div>
+        <span style="font-size:0.88rem;font-weight:${present ? '600' : '400'};color:${present ? 'var(--ink)' : 'var(--warm-gray)'};">${name}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function addGuest() {
+  const nameInput = document.getElementById('guestName');
+  const name = nameInput.value.trim();
+  if (!name) return;
+  guests.push({ name, org: '' });
+  nameInput.value = '';
+  renderGuestList();
+}
+
+function addGuestMain() {
+  const nameInput = document.getElementById('guestNameMain');
+  const orgInput = document.getElementById('guestOrgMain');
+  const name = nameInput.value.trim();
+  const org = orgInput.value.trim();
+  if (!name) return;
+  guests.push({ name, org });
+  nameInput.value = '';
+  orgInput.value = '';
+  renderGuestList();
+}
+
+function renderGuestList() {
+  const container = document.getElementById('guestList');
+  if (guests.length === 0) { container.innerHTML = ''; return; }
+  container.innerHTML = '<div style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--warm-gray);margin-bottom:6px;">Guests</div>' +
+    guests.map((g, i) => `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--linen);">
+        <span style="font-size:0.85rem;">${escapeHtml(g.name)}${g.org ? ' <span style="color:var(--warm-gray);">(' + escapeHtml(g.org) + ')</span>' : ''}</span>
+      </div>
+    `).join('');
+}
+
+// NAVIGATION
+function navigateTo(sectionId) {
+  if (!showAll) {
+    document.querySelectorAll('.section-card').forEach(c => c.classList.remove('visible'));
+    document.querySelectorAll('.section-card').forEach(c => c.style.display = 'none');
+  }
+
+  document.querySelectorAll('.journal-tab').forEach(n => n.classList.remove('active'));
+  const tab = document.querySelector(`.journal-tab[data-section="${sectionId}"]`);
+  if (tab) tab.classList.add('active');
+
+  const section = document.getElementById('section-' + sectionId);
+  if (section) {
+    if (!showAll) {
+      section.classList.add('visible');
+      section.style.display = 'block';
+    }
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Show divider if needed
+  const divider = document.getElementById('section-divider-internal');
+  if (divider && !showAll) {
+    divider.style.display = ['revenue','business','closing'].includes(sectionId) ? '' : 'none';
+  }
+}
+
+function toggleView() {
+  showAll = !showAll;
+  document.getElementById('viewToggleLabel').textContent = showAll ? 'Show One at a Time' : 'Show All Sections';
+  document.querySelectorAll('.section-card').forEach(c => {
+    if (showAll) {
+      c.classList.add('all-visible');
+      c.style.display = 'block';
+    } else {
+      c.classList.remove('all-visible');
+      c.style.display = 'none';
+    }
+  });
+  const divider = document.getElementById('section-divider-internal');
+  if (divider) divider.style.display = showAll ? '' : 'none';
+
+  if (!showAll) {
+    // Show attendance by default
+    const att = document.getElementById('section-attendance');
+    if (att) { att.classList.add('visible'); att.style.display = 'block'; }
+    document.querySelectorAll('.journal-tab').forEach(n => n.classList.remove('active'));
+    const firstTab = document.querySelector('.journal-tab[data-section="attendance"]');
+    if (firstTab) firstTab.classList.add('active');
+  }
+}
+
+function toggleSection(header) {
+  const body = header.nextElementSibling;
+  if (body && body.classList.contains('section-body')) {
+    body.style.display = body.style.display === 'none' ? '' : 'none';
+  }
+}
+
+// HACKATHON SLOTS
+function addHackathonSlot() {
+  const container = document.getElementById('hackathonSlots');
+  const count = container.children.length + 1;
+  if (count > 10) return;
+  const slot = document.createElement('div');
+  slot.className = 'hackathon-slot';
+  slot.innerHTML = `
+    <div class="slot-number">${count}</div>
+    <input class="slot-input" type="text" placeholder="Enter tool or project name...">
+    <button class="slot-remove" onclick="removeSlot(this)">x</button>
+  `;
+  container.appendChild(slot);
+}
+
+function removeSlot(btn) {
+  btn.parentElement.remove();
+  // Renumber
+  document.querySelectorAll('#hackathonSlots .slot-number').forEach((n, i) => n.textContent = i + 1);
+}
+
+// VOTING
+function castVote(containerId, optionEl) {
+  const container = document.getElementById(containerId);
+  container.querySelectorAll('.vote-option').forEach(o => o.classList.remove('selected'));
+  optionEl.classList.add('selected');
+}
+
+// MOTIONS
+function recordVote(btn, result) {
+  const item = btn.closest('.action-item');
+  const text = item.querySelector('span');
+  text.innerHTML += ` <strong style="color:${result === 'Approved' ? 'var(--sage)' : 'var(--warm-gray)'};margin-left:8px;">[${result}]</strong>`;
+  item.querySelectorAll('button').forEach(b => b.style.display = 'none');
+}
+
+function addMotion() {
+  const input = document.getElementById('newMotion');
+  const text = input.value.trim();
+  if (!text) return;
+  const container = document.getElementById('motionsContainer');
+  const item = document.createElement('div');
+  item.className = 'action-item';
+  item.innerHTML = `
+    <span style="font-size:0.85rem;flex:1;">${escapeHtml(text)}</span>
+    <button class="btn btn-sm" style="background:var(--sage);color:white;border:none;border-radius:6px;padding:4px 12px;font-size:0.72rem;cursor:pointer;" onclick="recordVote(this, 'Approved')">Approve</button>
+    <button class="btn btn-outline btn-sm" onclick="recordVote(this, 'Tabled')">Table</button>
+  `;
+  container.appendChild(item);
+  input.value = '';
+}
+
+// ACTION ITEMS
+function addActionItem() {
+  const itemInput = document.getElementById('newActionItem');
+  const ownerInput = document.getElementById('newActionOwner');
+  const dueInput = document.getElementById('newActionDue');
+  const text = itemInput.value.trim();
+  const owner = ownerInput.value.trim();
+  const due = dueInput.value;
+  if (!text) return;
+
+  const list = document.getElementById('actionItemsList');
+  const item = document.createElement('div');
+  item.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--linen);';
+  const dueDisplay = due ? formatDateShort(due) : '';
+  item.innerHTML = `
+    <input type="checkbox" style="accent-color:var(--gold);">
+    <span style="flex:1;font-size:0.85rem;">${escapeHtml(text)}</span>
+    <span style="font-size:0.72rem;font-weight:600;color:var(--gold);white-space:nowrap;">${escapeHtml(owner)}${dueDisplay ? ' / ' + dueDisplay : ''}</span>
+  `;
+  list.appendChild(item);
+
+  // Persist to DB if connected
+  if (isSupabaseConfigured()) {
+    DB.createActionItem({
+      meeting_id: null, // Will be linked when minutes are generated
+      task_description: text,
+      due_date: due || null,
+      status: 'open'
+    }).catch(err => console.error('Failed to save action item:', err));
+  }
+
+  itemInput.value = '';
+  ownerInput.value = '';
+  dueInput.value = '';
+}
+
+// CONSENT PACKAGE
+let consentApproved = false;
+function approveConsentPackage() {
+  if (consentApproved) return;
+  const checks = document.querySelectorAll('.consent-check:checked');
+  if (checks.length === 0) {
+    Toast.show('No consent items checked.', 'error');
+    return;
+  }
+  const items = Array.from(checks).map(cb => cb.parentElement.textContent.trim());
+  consentApproved = true;
+
+  // Show result
+  const result = document.getElementById('consentResult');
+  result.style.display = '';
+  result.textContent = 'Consent package approved (' + items.length + ' items)';
+
+  // Auto-insert into secretary notes (if business notes area exists)
+  const businessNotes = document.querySelector('#section-business .notes-area');
+  if (businessNotes) {
+    const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    businessNotes.value = `[${time}] MOTION: Consent agenda approved by unanimous consent.\nItems approved: ${items.join('; ')}\n\n` + businessNotes.value;
+  }
+
+  Toast.show('Consent package approved. Recorded in notes.', 'success');
+}
+
+// DECISIONS
+let savedDecisionsList = [];
+function saveDecision() {
+  const statement = document.getElementById('decisionStatement').value.trim();
+  const type = document.getElementById('decisionType').value;
+  const owner = document.getElementById('decisionOwner').value;
+  const rationale = document.getElementById('decisionRationale').value.trim();
+
+  if (!statement) {
+    Toast.show('Please enter a decision statement.', 'error');
+    return;
+  }
+
+  savedDecisionsList.push({ statement, type, owner, rationale });
+
+  // Show saved decision
+  const container = document.getElementById('savedDecisions');
+  const div = document.createElement('div');
+  div.style.cssText = 'padding:10px;margin-top:8px;background:white;border-radius:6px;border-left:3px solid var(--gold);font-size:0.82rem;';
+  div.innerHTML = `
+    <div style="font-weight:600;color:var(--ink);">${escapeHtml(statement)}</div>
+    <div style="font-size:0.72rem;color:var(--warm-gray);margin-top:4px;">
+      Type: ${type} | Owner: ${owner || 'TBD'} ${rationale ? '| ' + escapeHtml(rationale) : ''}
+    </div>
+  `;
+  container.appendChild(div);
+
+  // Clear form
+  document.getElementById('decisionStatement').value = '';
+  document.getElementById('decisionRationale').value = '';
+  Toast.show('Decision recorded.', 'success');
+}
+
+// Hide divider by default
+document.addEventListener('DOMContentLoaded', () => {
+  const divider = document.getElementById('section-divider-internal');
+  if (divider) divider.style.display = 'none';
+});
+</script>
+</body>
+</html>

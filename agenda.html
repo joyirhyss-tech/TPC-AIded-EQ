@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda | TPC Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main">
+
+    <div class="page-header">
+      <div>
+        <h1>Board Meeting Agenda</h1>
+        <p class="breadcrumb" id="agendaSubtitle">February 28, 2026</p>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-gold" onclick="openAddItemModal()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add to Agenda
+        </button>
+        <button class="btn btn-primary" id="confirmBtn" onclick="confirmAgenda()" style="display:none;">
+          Confirm Final Agenda
+        </button>
+      </div>
+    </div>
+
+    <!-- Status Banner -->
+    <div id="agendaStatus" class="alert alert-gold mb-md">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+      <span>Agenda is open for submissions. Items are grouped by the TPC framework: Consent, Ground, Practice, Decision, Act.</span>
+    </div>
+
+    <!-- Total Time -->
+    <div class="flex-between mb-md">
+      <span class="text-sm text-muted">Total estimated time: <strong id="totalTime">0 min</strong></span>
+      <span class="text-sm text-muted"><span id="itemCount">0</span> items</span>
+    </div>
+
+    <!-- Agenda Items List (grouped by type) -->
+    <div id="agendaList">
+      <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="empty-state hidden">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <h3>No agenda items yet</h3>
+      <p>Click "Add to Agenda" to submit the first item for this meeting.</p>
+    </div>
+
+    <!-- Board Pack: Meeting Documents -->
+    <div class="card mt-lg" id="boardPackCard">
+      <div class="card-header">
+        <h3>Meeting Documents (Board Pack)</h3>
+        <button class="btn btn-outline btn-sm" id="uploadDocBtn" onclick="document.getElementById('boardPackUpload').click()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload Document
+        </button>
+        <input type="file" id="boardPackUpload" accept=".pdf,.doc,.docx,.pptx,.ppt,.txt,.xlsx" style="display:none;" onchange="handleBoardPackUpload(event)">
+      </div>
+      <p class="text-sm text-muted mb-md">Pre-reads, reports, and supporting documents for this meeting. Shared with all board members.</p>
+      <div id="boardPackList">
+        <div class="empty-state" style="padding:20px;">
+          <p class="text-muted">No documents uploaded yet. Upload pre-reads and supporting materials here.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Add Item Modal -->
+<div class="modal-overlay" id="addItemModal">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('addItemModal')">x</button>
+    <h2 style="margin-bottom:20px;">Add Agenda Item</h2>
+
+    <form id="addItemForm" onsubmit="submitAgendaItem(event)">
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">Item Type *</label>
+          <select class="form-select" id="itemType" required>
+            <option value="">Select type...</option>
+            <option value="consent">Consent (Routine Approvals)</option>
+            <option value="ground">Ground (Pre-read + Q&A)</option>
+            <option value="practice">Practice (Live Discussion)</option>
+            <option value="decision">Decision (Recorded Decision)</option>
+            <option value="act">Act (Action Items / Follow-up)</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">Section</label>
+          <select class="form-select" id="itemSection">
+            <option value="Board Business">Board Business</option>
+            <option value="AIdedEQ Updates">AIdedEQ Updates</option>
+            <option value="Programs">Programs</option>
+            <option value="Revenue & Funding">Revenue & Funding</option>
+            <option value="Open Discussion">Open Discussion</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input type="text" class="form-input" id="itemTitle" placeholder="e.g. AIdedEQ Platform Update" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="itemDescription" placeholder="Brief description of what will be covered..." style="min-height:80px;"></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Time Needed (minutes) *</label>
+          <input type="number" class="form-input" id="itemTime" min="1" max="120" value="10" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Presenter</label>
+          <select class="form-select" id="itemPresenter">
+            <option value="">Select presenter...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- File Upload -->
+      <div class="form-group">
+        <label class="form-label">Attachments (slides, PDFs, images)</label>
+        <div class="upload-zone" id="itemUploadZone" onclick="document.getElementById('itemFileInput').click()">
+          <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <h4>Drop files here or click to browse</h4>
+          <p>PDF, PPTX, PNG, JPG (max 6MB each)</p>
+        </div>
+        <input type="file" id="itemFileInput" multiple accept=".pdf,.pptx,.ppt,.png,.jpg,.jpeg,.gif,.svg" style="display:none;" onchange="handleFileSelect(event)">
+        <div id="fileList" class="mt-sm"></div>
+      </div>
+
+      <div class="btn-group mt-md">
+        <button type="submit" class="btn btn-gold">Submit Agenda Item</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('addItemModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/utils.js"></script>
+<script>
+let currentMeetingId = null;
+let agendaItems = [];
+let selectedFiles = [];
+
+const TYPE_ORDER = ['consent', 'ground', 'practice', 'decision', 'act'];
+const TYPE_LABELS = {
+  consent: 'Commit (Consent): Routine Approvals',
+  ground: 'Ground: Context + Q&A',
+  practice: 'Practice: Live Discussion',
+  decision: 'Commit (Decision): Recorded Decisions',
+  act: 'Act: Action Items + Follow-up'
+};
+const TYPE_COLORS = {
+  consent: 'tag-sage',
+  ground: 'tag-navy',
+  practice: 'tag-plum',
+  decision: 'tag-gold',
+  act: 'tag-rose'
+};
+const TYPE_SHORT = {
+  consent: 'Consent',
+  ground: 'Ground',
+  practice: 'Practice',
+  decision: 'Decision',
+  act: 'Act'
+};
+
+(async () => {
+  const ready = await initPage('agenda');
+  if (!ready) return;
+
+  if (Auth.canManageAgenda()) {
+    document.getElementById('confirmBtn').style.display = '';
+  }
+
+  await loadAgenda();
+  await loadPresenterOptions();
+  await loadBoardPack();
+})();
+
+async function loadPresenterOptions() {
+  const select = document.getElementById('itemPresenter');
+  if (!isSupabaseConfigured()) {
+    ['JoYi', 'Alison', 'Kailani', 'Gabby', 'Jay', 'Kobe'].forEach(name => {
+      select.innerHTML += `<option value="${name}">${name}</option>`;
+    });
+    return;
+  }
+  const { data: profiles } = await DB.getProfiles();
+  (profiles || []).forEach(p => {
+    select.innerHTML += `<option value="${p.id}">${escapeHtml(p.full_name)}</option>`;
+  });
+}
+
+async function loadAgenda() {
+  const list = document.getElementById('agendaList');
+  const empty = document.getElementById('emptyState');
+
+  if (!isSupabaseConfigured()) {
+    agendaItems = [
+      { id: 1, title: 'Welcome + Call to Order', section_category: 'Board Business', time_needed_minutes: 5, presenter: { full_name: 'Alison' }, status: 'confirmed', item_type: 'consent', item_order: 1 },
+      { id: 11, title: 'Approve February 7 Meeting Minutes', section_category: 'Board Business', time_needed_minutes: 2, presenter: { full_name: 'Kailani' }, status: 'confirmed', item_type: 'consent', item_order: 2 },
+      { id: 2, title: 'ED + Board President Updates', section_category: 'Board Business', time_needed_minutes: 15, presenter: { full_name: 'JoYi' }, status: 'confirmed', item_type: 'ground', item_order: 3 },
+      { id: 3, title: 'AIdedEQ: Website Walkthrough', section_category: 'AIdedEQ Updates', time_needed_minutes: 10, presenter: { full_name: 'JoYi' }, status: 'confirmed', item_type: 'practice', item_order: 4 },
+      { id: 4, title: 'AIdedEQ Tools: Mission to Practice', section_category: 'AIdedEQ Updates', time_needed_minutes: 10, presenter: { full_name: 'Gabby' }, status: 'confirmed', item_type: 'practice', item_order: 5 },
+      { id: 5, title: 'Marketing, Market Research + Our Edge', section_category: 'Programs', time_needed_minutes: 10, presenter: { full_name: 'Kailani' }, status: 'confirmed', item_type: 'practice', item_order: 6 },
+      { id: 6, title: 'Girls Who Vibe: Program Update', section_category: 'Programs', time_needed_minutes: 10, presenter: { full_name: 'TPC Board' }, status: 'confirmed', item_type: 'practice', item_order: 7 },
+      { id: 7, title: 'Open Discussion + Small Group Time', section_category: 'Open Discussion', time_needed_minutes: 15, presenter: { full_name: 'Collaborative' }, status: 'confirmed', item_type: 'practice', item_order: 8 },
+      { id: 8, title: 'Revenue + Funding', section_category: 'Revenue & Funding', time_needed_minutes: 10, presenter: { full_name: 'Alison' }, status: 'confirmed', item_type: 'decision', item_order: 9 },
+      { id: 9, title: 'Internal Board Business', section_category: 'Board Business', time_needed_minutes: 10, presenter: { full_name: 'Board Only' }, status: 'confirmed', item_type: 'decision', item_order: 10 },
+      { id: 10, title: 'Closing Circle', section_category: 'Board Business', time_needed_minutes: 5, presenter: { full_name: 'Alison' }, status: 'confirmed', item_type: 'consent', item_order: 11 }
+    ];
+    renderAgendaItems();
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  currentMeetingId = params.get('meeting');
+  if (!currentMeetingId) {
+    const { data: meeting } = await DB.getUpcomingMeeting();
+    if (meeting) {
+      currentMeetingId = meeting.id;
+      document.getElementById('agendaSubtitle').textContent = formatDate(meeting.date);
+    }
+  }
+
+  if (!currentMeetingId) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  const { data, error } = await DB.getAgendaItems(currentMeetingId);
+  agendaItems = data || [];
+  renderAgendaItems();
+}
+
+function renderAgendaItems() {
+  const list = document.getElementById('agendaList');
+  const empty = document.getElementById('emptyState');
+
+  if (agendaItems.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+  let totalMin = 0;
+  let globalOrder = 0;
+  let html = '';
+
+  for (const type of TYPE_ORDER) {
+    const items = agendaItems.filter(i => (i.item_type || 'practice') === type);
+    if (items.length === 0) continue;
+
+    html += `
+      <div style="margin-top:${html ? '24px' : '0'};">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <span class="tag ${TYPE_COLORS[type]}" style="font-size:0.72rem;">${TYPE_SHORT[type]}</span>
+          <h3 style="font-size:0.85rem;color:var(--warm-gray);text-transform:uppercase;letter-spacing:0.8px;margin:0;">${TYPE_LABELS[type]}</h3>
+        </div>
+    `;
+
+    items.forEach(item => {
+      globalOrder++;
+      totalMin += item.time_needed_minutes || 0;
+      const statusTag = item.status === 'confirmed'
+        ? '<span class="tag tag-sage">Confirmed</span>'
+        : item.status === 'published'
+          ? '<span class="tag tag-gold">Published</span>'
+          : '<span class="tag tag-pending">Draft</span>';
+      const presenter = item.presenter?.full_name || 'TBD';
+
+      html += `
+        <div class="agenda-item" data-id="${item.id}">
+          <div class="item-order" style="background:${type === 'consent' ? 'var(--sage)' : type === 'decision' ? 'var(--gold)' : type === 'ground' ? '#4a5568' : type === 'act' ? 'var(--rose)' : 'var(--plum)'};color:white;">${globalOrder}</div>
+          <div class="item-content">
+            <div class="item-title">${escapeHtml(item.title)}</div>
+            <div class="item-meta">
+              ${escapeHtml(presenter)} &middot; ${item.time_needed_minutes || 0} min &middot; ${statusTag}
+            </div>
+          </div>
+          ${Auth.canManageAgenda() ? `
+          <div class="btn-group" style="flex-shrink:0;">
+            <button class="btn btn-outline btn-sm" onclick="editItem('${item.id}')" title="Edit">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="deleteItem('${item.id}', '${escapeHtml(item.title).replace(/'/g, "\\'")}')" title="Delete" style="color:#b5545b;border-color:#b5545b;">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            </button>
+          </div>` : ''}
+        </div>
+      `;
+    });
+
+    html += '</div>';
+  }
+
+  list.innerHTML = html;
+  document.getElementById('totalTime').textContent = totalMin + ' min';
+  document.getElementById('itemCount').textContent = agendaItems.length;
+}
+
+// ===== ADD ITEM MODAL =====
+
+function openAddItemModal() {
+  document.getElementById('addItemForm').reset();
+  document.getElementById('fileList').innerHTML = '';
+  selectedFiles = [];
+  document.getElementById('addItemModal').classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+function handleFileSelect(e) {
+  const files = Array.from(e.target.files);
+  selectedFiles = selectedFiles.concat(files);
+  renderFileList();
+}
+
+function renderFileList() {
+  const container = document.getElementById('fileList');
+  container.innerHTML = selectedFiles.map((f, i) => `
+    <div class="flex-between" style="padding:6px 0;border-bottom:1px solid var(--linen);">
+      <span class="text-sm">${escapeHtml(f.name)} <span class="text-muted">(${(f.size / 1024).toFixed(0)} KB)</span></span>
+      <button class="btn btn-outline btn-sm" onclick="removeFile(${i})">Remove</button>
+    </div>
+  `).join('');
+}
+
+function removeFile(index) {
+  selectedFiles.splice(index, 1);
+  renderFileList();
+}
+
+async function submitAgendaItem(e) {
+  e.preventDefault();
+  const itemType = document.getElementById('itemType').value;
+  const title = document.getElementById('itemTitle').value.trim();
+  const description = document.getElementById('itemDescription').value.trim();
+  const section = document.getElementById('itemSection').value;
+  const time = parseInt(document.getElementById('itemTime').value);
+  const presenter = document.getElementById('itemPresenter').value;
+
+  if (!itemType) {
+    Toast.show('Please select an item type.', 'error');
+    return;
+  }
+
+  if (!isSupabaseConfigured()) {
+    agendaItems.push({
+      id: Date.now(),
+      title,
+      section_category: section,
+      time_needed_minutes: time,
+      presenter: { full_name: presenter || 'TBD' },
+      status: 'draft',
+      item_type: itemType,
+      item_order: agendaItems.length + 1
+    });
+    renderAgendaItems();
+    closeModal('addItemModal');
+    Toast.show('Agenda item submitted.', 'success');
+    return;
+  }
+
+  const item = {
+    meeting_id: currentMeetingId,
+    title,
+    description,
+    item_type: itemType,
+    section_category: section,
+    time_needed_minutes: time,
+    presenter_id: presenter || null,
+    item_order: agendaItems.length + 1,
+    status: 'draft',
+    created_by: Auth.currentUser.id
+  };
+
+  const { data, error } = await DB.createAgendaItem(item);
+  if (error) {
+    Toast.show('Error: ' + error.message, 'error');
+    return;
+  }
+
+  for (const file of selectedFiles) {
+    const { data: uploadData, error: uploadError } = await Storage.uploadAgendaFile(currentMeetingId, data.id, file);
+    if (!uploadError) {
+      await DB.createAttachment({
+        agenda_item_id: data.id,
+        file_name: file.name,
+        file_path: uploadData.path,
+        file_type: file.name.split('.').pop(),
+        uploaded_by: Auth.currentUser.id
+      });
+    }
+  }
+
+  closeModal('addItemModal');
+  Toast.show('Agenda item submitted.', 'success');
+  await loadAgenda();
+}
+
+async function confirmAgenda() {
+  if (!Auth.canManageAgenda()) return;
+  if (!isSupabaseConfigured()) {
+    agendaItems.forEach(item => item.status = 'confirmed');
+    renderAgendaItems();
+    Toast.show('Agenda confirmed and published.', 'success');
+    return;
+  }
+
+  for (const item of agendaItems) {
+    await DB.updateAgendaItem(item.id, { status: 'published' });
+  }
+  Toast.show('Agenda confirmed and published.', 'success');
+  await loadAgenda();
+}
+
+function editItem(id) {
+  Toast.show('Edit functionality: use the modal to update this item.', 'info');
+}
+
+async function deleteItem(id, title) {
+  if (!confirm('Delete agenda item "' + title + '"? This cannot be undone.')) return;
+
+  if (!isSupabaseConfigured()) {
+    agendaItems = agendaItems.filter(i => String(i.id) !== String(id));
+    renderAgendaItems();
+    Toast.show('Item deleted.', 'success');
+    return;
+  }
+
+  const { error } = await DB.deleteAgendaItem(id);
+  if (error) {
+    Toast.show('Error deleting item: ' + error.message, 'error');
+    return;
+  }
+  Toast.show('Item deleted.', 'success');
+  await loadAgenda();
+}
+
+async function deleteMeeting(meetingId) {
+  if (!confirm('DELETE this entire meeting and all its agenda items? This cannot be undone.')) return;
+
+  if (!isSupabaseConfigured()) {
+    Toast.show('Cannot delete meetings in demo mode.', 'info');
+    return;
+  }
+
+  const { error } = await DB.deleteMeeting(meetingId);
+  if (error) {
+    Toast.show('Error deleting meeting: ' + error.message, 'error');
+    return;
+  }
+  Toast.show('Meeting deleted.', 'success');
+  currentMeetingId = null;
+  await loadAgenda();
+}
+
+// ===== BOARD PACK =====
+
+async function loadBoardPack() {
+  const container = document.getElementById('boardPackList');
+
+  if (!isSupabaseConfigured() || !currentMeetingId) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;"><p class="text-muted">No documents uploaded yet. Upload pre-reads and supporting materials here.</p></div>';
+    return;
+  }
+
+  const { data: docs, error } = await DB.getDocumentsByMeeting(currentMeetingId);
+  if (error || !docs || docs.length === 0) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;"><p class="text-muted">No documents uploaded yet. Upload pre-reads and supporting materials here.</p></div>';
+    return;
+  }
+
+  container.innerHTML = docs.map(doc => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--linen);">
+      <div>
+        <div style="font-size:0.88rem;font-weight:500;color:var(--ink);">${escapeHtml(doc.title)}</div>
+        <div style="font-size:0.72rem;color:var(--warm-gray);">${escapeHtml(doc.category || 'board_pack')} &middot; Uploaded ${new Date(doc.created_at).toLocaleDateString()}</div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="viewBoardPackDoc('${doc.file_path}')">View</button>
+    </div>
+  `).join('');
+}
+
+async function handleBoardPackUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!isSupabaseConfigured()) {
+    Toast.show('Board pack upload requires Supabase connection.', 'info');
+    e.target.value = '';
+    return;
+  }
+
+  Toast.show('Uploading ' + file.name + '...', 'info');
+
+  try {
+    const { data, error } = await Storage.uploadDocument('board_pack', file);
+    if (error) {
+      Toast.show('Upload error: ' + (error.message || 'Unknown error'), 'error');
+      e.target.value = '';
+      return;
+    }
+
+    const { error: dbError } = await DB.createDocument({
+      title: file.name,
+      category: 'board_pack',
+      file_path: data.path,
+      meeting_id: currentMeetingId,
+      uploaded_by: Auth.currentUser.id
+    });
+
+    if (dbError) {
+      Toast.show('File uploaded but failed to save record: ' + dbError.message, 'error');
+      e.target.value = '';
+      return;
+    }
+
+    Toast.show('Document uploaded to board pack.', 'success');
+    await loadBoardPack();
+  } catch (err) {
+    console.error('Upload error:', err);
+    Toast.show('Upload failed: ' + (err.message || 'Unknown error'), 'error');
+  }
+  e.target.value = '';
+}
+
+async function viewBoardPackDoc(filePath) {
+  if (!isSupabaseConfigured()) return;
+  const { url, error } = await Storage.getSignedUrl(Storage.buckets.documents, filePath);
+  if (error) {
+    Toast.show('Could not open file: ' + error.message, 'error');
+    return;
+  }
+  window.open(url, '_blank');
+}
+</script>
+</body>
+</html>

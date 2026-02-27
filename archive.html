@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive | TPC Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main">
+
+    <div class="page-header">
+      <div>
+        <h1>Meeting Archive</h1>
+        <p class="breadcrumb">Access past meeting agendas, minutes, and presentations. Permanently retained per Indiana law.</p>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="card mb-lg">
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0;">
+          <input type="text" class="form-input" id="searchInput" placeholder="Search meetings by topic, presenter, or date..." oninput="filterMeetings()">
+        </div>
+        <div class="form-group" style="margin-bottom:0;flex:0 0 160px;">
+          <select class="form-select" id="yearFilter" onchange="filterMeetings()">
+            <option value="">All Years</option>
+            <option value="2026" selected>2026</option>
+            <option value="2025">2025</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Archive List -->
+    <div id="archiveList"></div>
+
+    <!-- Retention Notice -->
+    <div class="alert alert-gold mt-lg">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>All meeting records are permanently retained per Indiana Code IC 23-17. Minutes and supporting documents cannot be deleted and are accessible to all board administrators.</span>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db.js"></script>
+<script src="js/utils.js"></script>
+<script>
+let allMeetings = [];
+
+(async () => {
+  const ready = await initPage('archive');
+  if (!ready) return;
+  await loadArchive();
+})();
+
+async function loadArchive() {
+  if (!isSupabaseConfigured()) {
+    // Demo data
+    allMeetings = [
+      { id: 1, date: '2026-02-28', time: '11:00', location: 'Zoom', status: 'scheduled', agendaCount: 10, minutesStatus: null },
+      { id: 2, date: '2026-02-07', time: '11:00', location: 'Zoom', status: 'completed', agendaCount: 10, minutesStatus: 'pending', attendanceNote: 'All present except Kailani (excused absence)' },
+      { id: 3, date: '2026-01-25', time: '11:00', location: 'Zoom', status: 'completed', agendaCount: 8, minutesStatus: 'approved' },
+      { id: 4, date: '2025-12-20', time: '11:00', location: 'Zoom', status: 'completed', agendaCount: 9, minutesStatus: 'approved' },
+      { id: 5, date: '2025-11-22', time: '11:00', location: 'Zoom', status: 'completed', agendaCount: 7, minutesStatus: 'approved' }
+    ];
+    renderMeetings(allMeetings);
+    return;
+  }
+
+  const { data } = await DB.getMeetings();
+  allMeetings = data || [];
+  renderMeetings(allMeetings);
+}
+
+function renderMeetings(meetings) {
+  const container = document.getElementById('archiveList');
+  if (meetings.length === 0) {
+    container.innerHTML = '<div class="empty-state"><h3>No meetings found</h3><p>Past meetings will appear here after they are completed.</p></div>';
+    return;
+  }
+
+  container.innerHTML = meetings.map(m => {
+    const statusTag = m.status === 'completed'
+      ? '<span class="tag tag-sage">Completed</span>'
+      : m.status === 'in_progress'
+        ? '<span class="tag tag-gold">In Progress</span>'
+        : '<span class="tag tag-pending">Scheduled</span>';
+    const minutesTag = m.minutesStatus === 'approved'
+      ? '<span class="tag tag-sage">Minutes Approved</span>'
+      : m.minutesStatus === 'pending'
+        ? '<span class="tag tag-rose">Minutes Pending</span>'
+        : '';
+
+    return `
+      <div class="card mb-md">
+        <div class="flex-between">
+          <div>
+            <h3 style="margin-bottom:4px;">Board Meeting: ${formatDate(m.date)}</h3>
+            <p class="text-sm text-muted">${formatTime(m.time)} &middot; ${escapeHtml(m.location || 'TBD')} &middot; ${m.agendaCount || 0} agenda items</p>
+          </div>
+          <div class="flex gap-sm" style="gap:8px;">
+            ${statusTag}
+            ${minutesTag}
+          </div>
+        </div>
+        <div class="btn-group mt-md">
+          <a href="agenda.html?meeting=${m.id}" class="btn btn-outline btn-sm">View Agenda</a>
+          ${m.status === 'completed' ? `<a href="minutes.html?meeting=${m.id}" class="btn btn-outline btn-sm">View Minutes</a>` : ''}
+          <a href="meeting.html?meeting=${m.id}" class="btn btn-outline btn-sm">Meeting Details</a>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function filterMeetings() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  const year = document.getElementById('yearFilter').value;
+  let filtered = allMeetings;
+  if (year) filtered = filtered.filter(m => m.date.startsWith(year));
+  if (query) filtered = filtered.filter(m =>
+    m.date.includes(query) || (m.location || '').toLowerCase().includes(query)
+  );
+  renderMeetings(filtered);
+}
+</script>
+</body>
+</html>

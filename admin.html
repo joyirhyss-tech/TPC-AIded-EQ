@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin | TPC Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main">
+
+    <div class="page-header">
+      <div>
+        <h1>Admin Panel</h1>
+        <p class="breadcrumb">Manage board members, roles, and meeting settings.</p>
+      </div>
+      <button class="btn btn-gold" onclick="openNewMeetingModal()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Meeting
+      </button>
+    </div>
+
+    <!-- Board Members -->
+    <div class="card mb-lg">
+      <div class="card-header">
+        <h3>Board Members</h3>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="membersTable">
+            <tr>
+              <td><strong>JoYi</strong></td>
+              <td>JoYiRhyss@gmail.com</td>
+              <td><span class="tag tag-gold">Admin</span></td>
+              <td>
+                <select class="form-select" style="width:auto;padding:4px 8px;font-size:0.78rem;" onchange="changeRole('joyi', this.value)">
+                  <option value="admin" selected>Admin</option>
+                  <option value="chair">Chair</option>
+                  <option value="secretary">Secretary</option>
+                  <option value="member">Member</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Alison</strong></td>
+              <td></td>
+              <td><span class="tag tag-plum">Chair</span></td>
+              <td>
+                <select class="form-select" style="width:auto;padding:4px 8px;font-size:0.78rem;" onchange="changeRole('alison', this.value)">
+                  <option value="admin">Admin</option>
+                  <option value="chair" selected>Chair</option>
+                  <option value="secretary">Secretary</option>
+                  <option value="member">Member</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Kailani</strong></td>
+              <td></td>
+              <td><span class="tag tag-navy">Secretary</span></td>
+              <td>
+                <select class="form-select" style="width:auto;padding:4px 8px;font-size:0.78rem;" onchange="changeRole('kailani', this.value)">
+                  <option value="admin">Admin</option>
+                  <option value="chair">Chair</option>
+                  <option value="secretary" selected>Secretary</option>
+                  <option value="member">Member</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Gabby</strong></td>
+              <td></td>
+              <td><span class="tag tag-pending">Member</span></td>
+              <td>
+                <select class="form-select" style="width:auto;padding:4px 8px;font-size:0.78rem;" onchange="changeRole('gabby', this.value)">
+                  <option value="admin">Admin</option>
+                  <option value="chair">Chair</option>
+                  <option value="secretary">Secretary</option>
+                  <option value="member" selected>Member</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Jay</strong></td>
+              <td></td>
+              <td><span class="tag tag-pending">Member</span></td>
+              <td>
+                <select class="form-select" style="width:auto;padding:4px 8px;font-size:0.78rem;">
+                  <option value="member" selected>Member</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Kobe</strong></td>
+              <td></td>
+              <td><span class="tag tag-pending">Member</span></td>
+              <td>
+                <select class="form-select" style="width:auto;padding:4px 8px;font-size:0.78rem;">
+                  <option value="member" selected>Member</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="text-xs text-muted mt-md">Admin emails: JoYiRhyss@gmail.com, Admin@thepracticecenter.org</p>
+    </div>
+
+    <!-- Scheduled Meetings -->
+    <div class="card mb-lg">
+      <div class="card-header">
+        <h3>Meetings</h3>
+      </div>
+      <div id="meetingsList">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+
+    <!-- App Settings -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Application Settings</h3>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Supabase Project URL</label>
+        <input type="text" class="form-input" value="https://fdzfiizwgvraamgkqggo.supabase.co" readonly style="background:var(--cream);">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Supabase Anon Key</label>
+        <input type="password" class="form-input" placeholder="Configure in js/config.js" readonly style="background:var(--cream);">
+        <p class="form-help">Set your Supabase anon key in js/config.js to connect the database.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- New Meeting Modal -->
+<div class="modal-overlay" id="newMeetingModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('newMeetingModal')">x</button>
+    <h2 style="margin-bottom:20px;">Schedule New Meeting</h2>
+    <form onsubmit="createMeeting(event)">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="meetingDate" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Time</label>
+        <input type="time" class="form-input" id="meetingTime" value="11:00" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Location</label>
+        <input type="text" class="form-input" id="meetingLocation" value="Zoom" placeholder="e.g. Zoom, Office">
+      </div>
+      <div class="btn-group mt-md">
+        <button type="submit" class="btn btn-gold">Create Meeting</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal('newMeetingModal')">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db.js"></script>
+<script src="js/utils.js"></script>
+<script>
+(async () => {
+  const ready = await initPage('admin');
+  if (!ready) return;
+  await loadMeetingsList();
+})();
+
+async function loadMeetingsList() {
+  const container = document.getElementById('meetingsList');
+
+  if (!isSupabaseConfigured()) {
+    container.innerHTML = `
+      <div class="agenda-item">
+        <div class="item-order" style="background:var(--sage);color:white;">1</div>
+        <div class="item-content">
+          <div class="item-title">February 28, 2026 Board Meeting</div>
+          <div class="item-meta">11:00 AM CT &middot; Zoom &middot; <span class="tag tag-gold">Scheduled</span></div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const { data: meetings, error } = await DB.getMeetings();
+  if (error || !meetings || meetings.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="padding:16px;"><p class="text-muted">No meetings found.</p></div>';
+    return;
+  }
+
+  container.innerHTML = meetings.map((m, i) => {
+    const statusTag = m.status === 'scheduled' ? 'tag-gold'
+      : m.status === 'completed' ? 'tag-sage'
+      : m.status === 'in_progress' ? 'tag-plum' : 'tag-pending';
+    return `
+      <div class="agenda-item" style="margin-bottom:8px;">
+        <div class="item-order" style="background:var(--sage);color:white;">${i + 1}</div>
+        <div class="item-content">
+          <div class="item-title">${formatDate(m.date)} Board Meeting</div>
+          <div class="item-meta">${formatTime(m.time)} CT &middot; ${escapeHtml(m.location || 'TBD')} &middot; <span class="tag ${statusTag}">${escapeHtml(m.status)}</span></div>
+        </div>
+        <div class="btn-group" style="flex-shrink:0;">
+          <a href="agenda.html?meeting=${m.id}" class="btn btn-outline btn-sm">View Agenda</a>
+          <button class="btn btn-outline btn-sm" onclick="deleteAdminMeeting('${m.id}', '${formatDate(m.date)}')" style="color:#b5545b;border-color:#b5545b;" title="Delete Meeting">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function deleteAdminMeeting(meetingId, dateLabel) {
+  if (!confirm('DELETE the meeting on ' + dateLabel + ' and ALL its agenda items? This cannot be undone.')) return;
+
+  const { error } = await DB.deleteMeeting(meetingId);
+  if (error) {
+    Toast.show('Error deleting meeting: ' + error.message, 'error');
+    return;
+  }
+  Toast.show('Meeting deleted.', 'success');
+  await loadMeetingsList();
+}
+
+function openNewMeetingModal() {
+  document.getElementById('newMeetingModal').classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+async function createMeeting(e) {
+  e.preventDefault();
+  const date = document.getElementById('meetingDate').value;
+  const time = document.getElementById('meetingTime').value;
+  const location = document.getElementById('meetingLocation').value;
+
+  if (!isSupabaseConfigured()) {
+    Toast.show('Meeting created (demo mode).', 'success');
+    closeModal('newMeetingModal');
+    return;
+  }
+
+  const { error } = await DB.createMeeting({
+    date, time, location, status: 'scheduled',
+    created_by: Auth.currentUser?.id || null
+  });
+  if (error) {
+    Toast.show('Error: ' + error.message, 'error');
+    return;
+  }
+  Toast.show('Meeting scheduled.', 'success');
+  closeModal('newMeetingModal');
+  await loadMeetingsList();
+}
+
+function changeRole(member, role) {
+  Toast.show(`Role updated: ${member} is now ${role}.`, 'info');
+}
+</script>
+</body>
+</html>

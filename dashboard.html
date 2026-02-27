@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard | TPC Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main">
+
+    <div class="page-header">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="breadcrumb">Welcome back. Here is your board overview.</p>
+      </div>
+      <div class="btn-group">
+        <a href="agenda.html" class="btn btn-gold">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add to Agenda
+        </a>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div id="alertsArea"></div>
+
+    <!-- Upcoming Meeting Card -->
+    <div class="card mb-lg" id="upcomingMeetingCard">
+      <div class="card-header">
+        <h3>Upcoming Board Meeting</h3>
+        <span class="tag tag-gold" id="meetingCountdown"></span>
+      </div>
+      <div id="meetingDetails">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="card-grid card-grid-4 mb-lg" id="statsGrid">
+      <div class="stat-card">
+        <div class="stat-value" id="statAgendaItems">--</div>
+        <div class="stat-label">Agenda Items</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statOpenActions">--</div>
+        <div class="stat-label">Open Action Items</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statPendingMinutes">--</div>
+        <div class="stat-label">Minutes Pending Approval</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statBoardSeats">6</div>
+        <div class="stat-label">Board Members</div>
+      </div>
+    </div>
+
+    <!-- Prep Status + Open Actions Row -->
+    <div class="card-grid card-grid-2 mb-lg">
+
+      <!-- Prep Status Card -->
+      <div class="card" id="prepStatusCard">
+        <div class="card-header">
+          <h3>Meeting Prep Status</h3>
+          <span class="tag tag-sage" id="prepTag">Checking...</span>
+        </div>
+        <div id="prepStatusContent">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span id="prepAgendaIcon" style="width:8px;height:8px;border-radius:50%;background:#c8a961;flex-shrink:0;"></span>
+              <span class="text-sm" id="prepAgendaText">Agenda: Loading...</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span id="prepGroundIcon" style="width:8px;height:8px;border-radius:50%;background:#4a5568;flex-shrink:0;"></span>
+              <span class="text-sm" id="prepGroundText">Ground items: Loading...</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span id="prepDocsIcon" style="width:8px;height:8px;border-radius:50%;background:#6b4c7a;flex-shrink:0;"></span>
+              <span class="text-sm" id="prepDocsText">Board Pack: Loading...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Open Action Items Card -->
+      <div class="card" id="actionItemsCard">
+        <div class="card-header">
+          <h3>Open Action Items</h3>
+          <span class="tag tag-rose" id="actionCountTag">--</span>
+        </div>
+        <div id="actionItemsList" style="max-height:280px;overflow-y:auto;"></div>
+      </div>
+
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card-grid card-grid-3 mb-lg">
+      <a href="agenda.html" class="card" style="text-decoration:none;">
+        <h3>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--gold)" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Submit Agenda Item
+        </h3>
+        <p class="text-sm text-muted mt-sm">Add a topic, presentation, or discussion item for the next meeting.</p>
+      </a>
+      <a href="meeting.html" class="card" style="text-decoration:none;">
+        <h3>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--gold)" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Join Live Meeting
+        </h3>
+        <p class="text-sm text-muted mt-sm">View the agenda, presentations, and follow along during the board meeting.</p>
+      </a>
+      <a href="minutes.html" class="card" style="text-decoration:none;">
+        <h3>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--gold)" stroke-width="2" style="vertical-align:middle;margin-right:6px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Review Minutes
+        </h3>
+        <p class="text-sm text-muted mt-sm">Review and approve meeting minutes from the most recent board meeting.</p>
+      </a>
+    </div>
+
+    <!-- Board Seat Alerts -->
+    <div class="card" id="seatAlertsCard" style="display:none;">
+      <div class="card-header">
+        <h3>Board Seat Alerts</h3>
+        <span class="tag tag-rose">Action Needed</span>
+      </div>
+      <div id="seatAlertsList"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db.js"></script>
+<script src="js/utils.js"></script>
+<script>
+(async () => {
+  const ready = await initPage('dashboard');
+  if (!ready) return;
+
+  await loadDashboard();
+})();
+
+async function loadDashboard() {
+  // Load upcoming meeting
+  await loadUpcomingMeeting();
+
+  // Load stats
+  await loadStats();
+
+  // Load prep status + action items
+  await loadPrepStatus();
+  await loadActionItems();
+
+  // Load seat alerts
+  await loadSeatAlerts();
+}
+
+function buildCalendarLink(dateStr, timeStr, location) {
+  // Build Google Calendar URL from meeting data
+  // dateStr: '2026-02-28', timeStr: '11:00'
+  const d = dateStr.replace(/-/g, '');
+  const t = (timeStr || '11:00').replace(':', '') + '00';
+  // Meeting is 2 hours, CT timezone
+  const startH = parseInt((timeStr || '11:00').split(':')[0]);
+  const endH = startH + 2;
+  const endT = String(endH).padStart(2, '0') + (timeStr || '11:00').split(':')[1] + '00';
+  const zoomLink = 'https://us02web.zoom.us/j/87830852593';
+  const details = 'TPC Board Meeting' + encodeURIComponent('\n\nZoom: ' + zoomLink + '\nAgenda: https://tpc-board-meeting-dashboard.netlify.app/agenda.html');
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('TPC Board Meeting')}&dates=${d}T${t}/${d}T${endT}&ctz=America/Chicago&details=${details}&location=${encodeURIComponent(location || 'Zoom')}`;
+}
+
+async function loadUpcomingMeeting() {
+  const container = document.getElementById('meetingDetails');
+  const countdownEl = document.getElementById('meetingCountdown');
+
+  if (!isSupabaseConfigured()) {
+    // Demo data
+    container.innerHTML = `
+      <div style="display:flex;gap:24px;flex-wrap:wrap;">
+        <div>
+          <div class="text-sm text-muted">Date</div>
+          <div style="font-weight:600;">Saturday, February 28, 2026</div>
+        </div>
+        <div>
+          <div class="text-sm text-muted">Time</div>
+          <div style="font-weight:600;">11:00 AM CT</div>
+        </div>
+        <div>
+          <div class="text-sm text-muted">Location</div>
+          <div style="font-weight:600;">Zoom</div>
+        </div>
+        <div>
+          <div class="text-sm text-muted">Status</div>
+          <div><span class="tag tag-gold">Agenda Open</span></div>
+        </div>
+      </div>
+      <div class="mt-md btn-group">
+        <a href="agenda.html" class="btn btn-outline btn-sm">View Agenda</a>
+        <a href="meeting.html" class="btn btn-primary btn-sm">Enter Meeting</a>
+        <a href="${buildCalendarLink('2026-02-28', '11:00', 'Zoom')}" target="_blank" class="btn btn-outline btn-sm" style="border-color:#c8a961;color:#c8a961;">Add to Google Calendar</a>
+      </div>
+    `;
+    const days = daysUntil('2026-02-28');
+    countdownEl.textContent = days > 0 ? `${days} days away` : days === 0 ? 'Today' : 'Past';
+    return;
+  }
+
+  const { data: meeting, error } = await DB.getUpcomingMeeting();
+  if (error || !meeting) {
+    container.innerHTML = '<div class="empty-state"><h3>No upcoming meetings scheduled</h3><p>An admin can create the next meeting from the Admin panel.</p></div>';
+    countdownEl.textContent = '';
+    return;
+  }
+
+  const days = daysUntil(meeting.date);
+  countdownEl.textContent = days > 0 ? `${days} days away` : days === 0 ? 'Today' : 'Past';
+
+  container.innerHTML = `
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div>
+        <div class="text-sm text-muted">Date</div>
+        <div style="font-weight:600;">${formatDate(meeting.date)}</div>
+      </div>
+      <div>
+        <div class="text-sm text-muted">Time</div>
+        <div style="font-weight:600;">${formatTime(meeting.time)} CT</div>
+      </div>
+      <div>
+        <div class="text-sm text-muted">Location</div>
+        <div style="font-weight:600;">${escapeHtml(meeting.location || 'TBD')}</div>
+      </div>
+      <div>
+        <div class="text-sm text-muted">Status</div>
+        <div><span class="tag tag-${meeting.status === 'scheduled' ? 'gold' : meeting.status === 'in_progress' ? 'sage' : 'pending'}">${escapeHtml(meeting.status)}</span></div>
+      </div>
+    </div>
+    <div class="mt-md btn-group">
+      <a href="agenda.html?meeting=${meeting.id}" class="btn btn-outline btn-sm">View Agenda</a>
+      <a href="meeting.html?meeting=${meeting.id}" class="btn btn-primary btn-sm">Enter Meeting</a>
+      <a href="${buildCalendarLink(meeting.date, meeting.time, meeting.location || 'Zoom')}" target="_blank" class="btn btn-outline btn-sm" style="border-color:#c8a961;color:#c8a961;">Add to Google Calendar</a>
+    </div>
+  `;
+}
+
+async function loadStats() {
+  if (!isSupabaseConfigured()) {
+    document.getElementById('statAgendaItems').textContent = '11';
+    document.getElementById('statOpenActions').textContent = '3';
+    document.getElementById('statPendingMinutes').textContent = '0';
+    return;
+  }
+
+  // Count agenda items for upcoming meeting
+  const { data: meeting } = await DB.getUpcomingMeeting();
+  if (meeting) {
+    const { data: items } = await DB.getAgendaItems(meeting.id);
+    document.getElementById('statAgendaItems').textContent = items?.length || 0;
+  }
+
+  // Count open action items
+  const { data: actions } = await DB.getAllOpenActionItems();
+  document.getElementById('statOpenActions').textContent = actions?.length || 0;
+
+  // Count pending minutes
+  const { data: meetings } = await DB.getMeetings('completed');
+  let pending = 0;
+  for (const m of (meetings || [])) {
+    const { data: mins } = await DB.getMinutes(m.id);
+    if (mins && mins.status === 'pending_approval') pending++;
+  }
+  document.getElementById('statPendingMinutes').textContent = pending;
+}
+
+async function loadSeatAlerts() {
+  if (!isSupabaseConfigured()) {
+    // Show demo alert about upcoming elections
+    const alertsArea = document.getElementById('alertsArea');
+    const electionDays = daysUntil('2026-12-01');
+    if (electionDays <= 365 && electionDays > 0) {
+      alertsArea.innerHTML = `
+        <div class="alert alert-gold mb-md">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+          <span>Board elections scheduled for December 2026. All officer seats (2-year terms) are up for election. ${electionDays} days until election date.</span>
+        </div>
+      `;
+    }
+    return;
+  }
+
+  const { data: seats } = await DB.getExpiringSeats(180);
+  if (seats && seats.length > 0) {
+    const card = document.getElementById('seatAlertsCard');
+    card.style.display = '';
+    const list = document.getElementById('seatAlertsList');
+    list.innerHTML = seats.map(s => `
+      <div class="approval-row">
+        <span class="approval-name">${escapeHtml(s.position)} - ${escapeHtml(s.holder?.full_name || 'Vacant')}</span>
+        <span class="tag tag-rose">Term ends ${formatDateShort(s.term_end)}</span>
+      </div>
+    `).join('');
+  }
+}
+
+async function loadPrepStatus() {
+  const agendaText = document.getElementById('prepAgendaText');
+  const groundText = document.getElementById('prepGroundText');
+  const docsText = document.getElementById('prepDocsText');
+  const tag = document.getElementById('prepTag');
+
+  if (!isSupabaseConfigured()) {
+    // Demo mode
+    agendaText.textContent = 'Agenda: 11 items confirmed';
+    groundText.textContent = 'Ground items: 1 pre-read (ED + Board President Updates)';
+    docsText.textContent = 'Board Pack: 0 documents uploaded';
+    tag.textContent = 'In Progress';
+    tag.className = 'tag tag-gold';
+    return;
+  }
+
+  const { data: meeting } = await DB.getUpcomingMeeting();
+  if (!meeting) {
+    agendaText.textContent = 'No upcoming meeting';
+    groundText.textContent = '--';
+    docsText.textContent = '--';
+    tag.textContent = 'N/A';
+    return;
+  }
+
+  const { data: items } = await DB.getAgendaItems(meeting.id);
+  const allItems = items || [];
+  const confirmed = allItems.filter(i => i.status === 'confirmed').length;
+  const pending = allItems.length - confirmed;
+  agendaText.textContent = 'Agenda: ' + allItems.length + ' items (' + (pending > 0 ? pending + ' pending' : 'all confirmed') + ')';
+
+  const groundItems = allItems.filter(i => i.item_type === 'ground');
+  groundText.textContent = 'Ground items: ' + groundItems.length + ' pre-read' + (groundItems.length !== 1 ? 's' : '');
+
+  const { data: docs } = await DB.getDocumentsByMeeting(meeting.id);
+  const docCount = docs?.length || 0;
+  docsText.textContent = 'Board Pack: ' + docCount + ' document' + (docCount !== 1 ? 's' : '') + ' uploaded';
+
+  // Set overall status
+  if (allItems.length > 0 && pending === 0 && docCount > 0) {
+    tag.textContent = 'Ready';
+    tag.className = 'tag tag-sage';
+  } else if (allItems.length > 0) {
+    tag.textContent = 'In Progress';
+    tag.className = 'tag tag-gold';
+  } else {
+    tag.textContent = 'Not Started';
+    tag.className = 'tag tag-pending';
+  }
+}
+
+async function loadActionItems() {
+  const list = document.getElementById('actionItemsList');
+  const countTag = document.getElementById('actionCountTag');
+
+  if (!isSupabaseConfigured()) {
+    // Demo data
+    const demoActions = [
+      { description: 'Submit Q1 financial report to board', assignee: { full_name: 'JoYi' }, due_date: '2026-03-07', status: 'open' },
+      { description: 'Finalize AIdedEQ website copy for launch', assignee: { full_name: 'Gabby' }, due_date: '2026-03-14', status: 'open' },
+      { description: 'Draft Girls Who Vibe spring schedule', assignee: { full_name: 'Kailani' }, due_date: '2026-03-10', status: 'open' }
+    ];
+    countTag.textContent = demoActions.length + ' open';
+    list.innerHTML = demoActions.map(a => renderActionRow(a)).join('');
+    return;
+  }
+
+  const { data: actions } = await DB.getAllOpenActionItems();
+  const items = actions || [];
+  countTag.textContent = items.length + ' open';
+
+  if (items.length === 0) {
+    list.innerHTML = '<div class="empty-state" style="padding:16px;"><p class="text-sm text-muted">No open action items. Great work!</p></div>';
+    countTag.className = 'tag tag-sage';
+    countTag.textContent = 'All clear';
+    return;
+  }
+
+  list.innerHTML = items.map(a => renderActionRow(a)).join('');
+}
+
+function renderActionRow(action) {
+  const dueDate = action.due_date ? formatDateShort(action.due_date) : 'No date';
+  const isOverdue = action.due_date && new Date(action.due_date) < new Date();
+  const dueBadge = isOverdue
+    ? '<span style="font-size:0.7rem;color:#b5545b;font-weight:600;">OVERDUE</span>'
+    : '<span style="font-size:0.7rem;color:var(--warm-gray);">' + dueDate + '</span>';
+  return `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--linen);">
+      <div style="width:4px;height:32px;border-radius:2px;background:${isOverdue ? '#b5545b' : '#c8a961'};flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.85rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(action.description || action.task || '')}</div>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:2px;">
+          <span style="font-size:0.72rem;color:var(--warm-gray);">${escapeHtml(action.assignee?.full_name || 'Unassigned')}</span>
+          ${dueBadge}
+        </div>
+      </div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

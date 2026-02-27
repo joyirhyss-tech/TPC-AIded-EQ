@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In | TPC Board Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-card">
+    <div class="logo-mark">
+      <svg viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg" width="200" height="80">
+        <rect x="0" y="0" width="200" height="80" rx="8" fill="#1a1520"/>
+        <rect x="2" y="2" width="196" height="76" rx="7" fill="none" stroke="#c8a961" stroke-width="1.5"/>
+        <line x1="20" y1="18" x2="180" y2="18" stroke="#c8a961" stroke-width="0.5" opacity="0.6"/>
+        <line x1="20" y1="62" x2="180" y2="62" stroke="#c8a961" stroke-width="0.5" opacity="0.6"/>
+        <text x="100" y="13" text-anchor="middle" font-family="Georgia,serif" font-size="7" font-weight="400" fill="#c8a961" letter-spacing="4">EST. 2024</text>
+        <text x="100" y="47" text-anchor="middle" font-family="Georgia,serif" font-size="32" font-weight="700" fill="#ffffff" letter-spacing="8">TPC</text>
+        <text x="100" y="73" text-anchor="middle" font-family="Georgia,serif" font-size="7.5" font-weight="400" fill="#c8a961" letter-spacing="3">THE PRACTICE CENTER</text>
+      </svg>
+    </div>
+    <h1>TPC Board Dashboard</h1>
+    <p class="login-subtitle">Sign in to access the board management dashboard</p>
+
+    <div id="loginAlert" class="alert alert-rose hidden" style="text-align:left;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="loginAlertText"></span>
+    </div>
+
+    <!-- Email + Password Form -->
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <input type="email" id="email" class="form-input" placeholder="you@thepracticecenter.org" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" class="form-input" placeholder="Your password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-gold btn-block btn-lg" id="loginBtn">
+        Sign In
+      </button>
+    </form>
+
+    <div class="login-divider">or</div>
+
+    <!-- Magic Link -->
+    <form id="magicLinkForm" onsubmit="handleMagicLink(event)">
+      <div class="form-group">
+        <input type="email" id="magicEmail" class="form-input" placeholder="Email for passwordless sign-in" autocomplete="email">
+      </div>
+      <button type="submit" class="btn btn-outline btn-block" id="magicBtn">
+        Send Magic Link
+      </button>
+    </form>
+
+    <p class="text-muted mt-md" style="font-size:0.75rem;">
+      Contact your board administrator if you need access.
+    </p>
+
+    <div id="setupNotice" class="hidden" style="margin-top:20px;">
+      <div class="alert alert-gold" style="text-align:left;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <span>Supabase is not configured yet. See <a href="SETUP.md" style="color:#7a5f2a;font-weight:600;">SETUP.md</a> to connect your database. For now, click Sign In to enter demo mode.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db.js"></script>
+<script src="js/utils.js"></script>
+<script>
+  // Check if already logged in
+  (async () => {
+    await Auth.init();
+    if (Auth.isLoggedIn() && isSupabaseConfigured()) {
+      window.location.href = 'dashboard.html';
+    }
+    if (!isSupabaseConfigured()) {
+      document.getElementById('setupNotice').classList.remove('hidden');
+    }
+  })();
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    btn.textContent = 'Signing in...';
+    btn.disabled = true;
+
+    const result = await Auth.login(email, password);
+    if (result.success) {
+      window.location.href = 'dashboard.html';
+    } else {
+      showLoginError(result.error || 'Invalid email or password');
+      btn.textContent = 'Sign In';
+      btn.disabled = false;
+    }
+  }
+
+  async function handleMagicLink(e) {
+    e.preventDefault();
+    const btn = document.getElementById('magicBtn');
+    const email = document.getElementById('magicEmail').value.trim();
+    if (!email) return;
+
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+
+    const result = await Auth.sendMagicLink(email);
+    if (result.success) {
+      Toast.show('Magic link sent. Check your email.', 'success');
+      btn.textContent = 'Link Sent';
+    } else {
+      showLoginError(result.error || 'Could not send magic link');
+      btn.textContent = 'Send Magic Link';
+      btn.disabled = false;
+    }
+  }
+
+  function showLoginError(msg) {
+    const alert = document.getElementById('loginAlert');
+    document.getElementById('loginAlertText').textContent = msg;
+    alert.classList.remove('hidden');
+  }
+</script>
+</body>
+</html>

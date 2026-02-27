@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Governance | TPC Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main">
+
+    <div class="page-header">
+      <div>
+        <h1>Board Governance</h1>
+        <p class="breadcrumb">Bylaws, board seats, term tracking, and compliance.</p>
+      </div>
+    </div>
+
+    <!-- Board Seats -->
+    <div class="card mb-lg">
+      <div class="card-header">
+        <h3>Board of Directors: Seats & Terms</h3>
+        <span class="tag tag-gold">2-Year Terms</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Position</th>
+              <th>Current Holder</th>
+              <th>Title</th>
+              <th>Term Start</th>
+              <th>Term End</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="seatsTable">
+            <tr><td colspan="6" style="text-align:center;color:var(--warm-gray);padding:20px;"><div class="loading-spinner"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert alert-gold mt-md">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        <span id="electionNotice"><strong>Next Election:</strong> December 2026. All officer/executive seats are 2-year terms up for election. New terms begin at the first meeting of January 2027.</span>
+      </div>
+    </div>
+
+    <!-- Bylaws & Governing Documents -->
+    <div class="card mb-lg">
+      <div class="card-header">
+        <h3>Bylaws & Governing Documents</h3>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('bylawUpload').click()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload Document
+        </button>
+        <input type="file" id="bylawUpload" accept=".pdf,.doc,.docx" style="display:none;" onchange="handleBylawUpload(event)">
+      </div>
+
+      <div id="documentsList">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <h3>No bylaws uploaded yet</h3>
+          <p>Upload your TPC bylaws and governing documents here. They will be securely stored and accessible to all board members.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signed Board Documents -->
+    <div class="card mb-lg">
+      <div class="card-header">
+        <h3>Signed Board Documents</h3>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('signedDocUpload').click()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Upload Signed Document
+        </button>
+        <input type="file" id="signedDocUpload" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" style="display:none;" onchange="handleSignedDocUpload(event)">
+      </div>
+
+      <p class="text-sm text-muted mb-md">Conflict of interest forms, board agreements, and other signed documents from individual board members.</p>
+
+      <div id="signedDocsList">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          <h3>No signed documents yet</h3>
+          <p>Upload conflict of interest forms, board agreements, and other signed documents here.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indiana Compliance (Collapsible) -->
+    <div class="card mb-lg">
+      <div class="card-header" style="cursor:pointer;" onclick="toggleCompliance()">
+        <h3>Indiana Nonprofit Compliance</h3>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="tag tag-plum">IC 23-17</span>
+          <svg id="complianceChevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+
+      <div id="complianceContent" style="display:none;line-height:1.8;font-size:0.88rem;">
+        <p>The Practice Center operates under Indiana Code IC 23-17 (Indiana Nonprofit Corporation Act). Key governance requirements:</p>
+
+        <h4 class="mt-md" style="font-size:0.9rem;">Meeting Minutes Requirements</h4>
+        <ul style="margin-left:20px;margin-top:6px;">
+          <li>One officer (Secretary) designated to prepare minutes of all board meetings</li>
+          <li>Minutes must include: date, time, location, attendees, quorum verification</li>
+          <li>All motions recorded with maker, seconder, and vote outcome</li>
+          <li>Minutes retained <strong>permanently</strong> (IRS guidance for 501(c)(3)s)</li>
+          <li>Minimum 3-year retention required by Indiana state law</li>
+        </ul>
+
+        <h4 class="mt-md" style="font-size:0.9rem;">Board Governance</h4>
+        <ul style="margin-left:20px;margin-top:6px;">
+          <li>Board must maintain quorum (4 of 6 members) for official business</li>
+          <li>Officers serve 2-year terms per bylaws</li>
+          <li>Annual financial oversight responsibility for all members</li>
+          <li>Members must understand fiduciary duties and governance responsibilities</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Training Library -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Education & Training Library</h3>
+        <span class="tag tag-pending">Coming Soon</span>
+      </div>
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        <h3>Training materials coming soon</h3>
+        <p>Board orientation, fiduciary duties, financial oversight, and governance best practices will be available here.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/utils.js"></script>
+<script>
+const boardSeatTitles = {
+  'Board President': 'Executive Director & Board President',
+  'Board Chair': 'Board Chair',
+  'Secretary': 'Board Secretary',
+  'Director': 'Board Member'
+};
+
+const boardSeatNames = {
+  'Board President': 'JoYi',
+  'Board Chair': 'Alison',
+  'Secretary': 'Kailani',
+  'Director-Gabby': 'Gabby',
+  'Director-Jay': 'Jay',
+  'Director-Kobe': 'Kobe'
+};
+
+(async () => {
+  const ready = await initPage('governance');
+  if (!ready) return;
+  await loadBoardSeats();
+  await loadDocuments();
+  await loadSignedDocs();
+})();
+
+// ===== BOARD SEATS =====
+
+async function loadBoardSeats() {
+  const tbody = document.getElementById('seatsTable');
+
+  if (!isSupabaseConfigured()) {
+    renderDemoSeats(tbody);
+    return;
+  }
+
+  const { data: seats, error } = await DB.getBoardSeats();
+  if (error || !seats || seats.length === 0) {
+    renderDemoSeats(tbody);
+    return;
+  }
+
+  renderSeats(tbody, seats);
+}
+
+function renderDemoSeats(tbody) {
+  const demoSeats = [
+    { position: 'Board President', holder: { full_name: 'JoYi' }, notes: 'Executive Director & Board President', term_start: '2025-10-01', term_end: '2027-09-30', election_date: '2026-12-01' },
+    { position: 'Board Chair', holder: { full_name: 'Alison' }, notes: 'Board Chair', term_start: '2025-10-01', term_end: '2027-09-30', election_date: '2026-12-01' },
+    { position: 'Secretary', holder: { full_name: 'Kailani' }, notes: 'Board Secretary', term_start: '2025-10-01', term_end: '2027-09-30', election_date: '2026-12-01' },
+    { position: 'Director', holder: { full_name: 'Gabby' }, notes: 'Director, AIdedEQ', term_start: '2025-10-01', term_end: '2027-09-30', election_date: '2026-12-01' },
+    { position: 'Director', holder: { full_name: 'Jay' }, notes: 'Board Member', term_start: '2025-10-01', term_end: '2027-09-30', election_date: '2026-12-01' },
+    { position: 'Director', holder: { full_name: 'Kobe' }, notes: 'Board Member', term_start: '2025-10-01', term_end: '2027-09-30', election_date: '2026-12-01' }
+  ];
+  renderSeats(tbody, demoSeats);
+}
+
+function renderSeats(tbody, seats) {
+  const today = new Date();
+  const isAdmin = Auth.isAdmin ? Auth.isAdmin() : false;
+
+  tbody.innerHTML = seats.map(seat => {
+    const holder = seat.holder?.full_name || seat.notes?.split(':')[0]?.trim() || 'Vacant';
+    const title = seat.notes || boardSeatTitles[seat.position] || seat.position;
+    const termEnd = new Date(seat.term_end);
+    const daysLeft = Math.ceil((termEnd - today) / (1000 * 60 * 60 * 24));
+    let statusTag;
+    if (daysLeft < 0) {
+      statusTag = '<span class="tag tag-rose">Expired</span>';
+    } else if (daysLeft <= 90) {
+      statusTag = '<span class="tag tag-gold">Expiring</span>';
+    } else {
+      statusTag = '<span class="tag tag-sage">Active</span>';
+    }
+
+    return `
+      <tr>
+        <td><strong>${escapeHtml(seat.position)}</strong></td>
+        <td>${escapeHtml(holder)}</td>
+        <td>${escapeHtml(title)}</td>
+        <td>${formatDateShort(seat.term_start)}</td>
+        <td>${formatDateShort(seat.term_end)}</td>
+        <td>${statusTag}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ===== COMPLIANCE TOGGLE =====
+
+function toggleCompliance() {
+  const content = document.getElementById('complianceContent');
+  const chevron = document.getElementById('complianceChevron');
+  if (content.style.display === 'none') {
+    content.style.display = '';
+    chevron.style.transform = 'rotate(180deg)';
+  } else {
+    content.style.display = 'none';
+    chevron.style.transform = '';
+  }
+}
+
+// ===== BYLAWS UPLOAD =====
+
+async function handleBylawUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!isSupabaseConfigured()) {
+    Toast.show('Bylaws upload requires Supabase connection. See SETUP.md.', 'info');
+    e.target.value = '';
+    return;
+  }
+
+  Toast.show('Uploading ' + file.name + '...', 'info');
+
+  try {
+    const { data, error } = await Storage.uploadDocument('bylaws', file);
+    if (error) {
+      if (error.message && error.message.includes('Bucket not found')) {
+        Toast.show('Storage bucket "documents" not found. Please create it in Supabase Dashboard > Storage. See SETUP.md for details.', 'error');
+      } else if (error.statusCode === 404 || error.message?.includes('not found')) {
+        Toast.show('Storage not configured. Create a "documents" bucket in Supabase Dashboard > Storage.', 'error');
+      } else {
+        Toast.show('Upload error: ' + error.message, 'error');
+      }
+      e.target.value = '';
+      return;
+    }
+
+    const { error: dbError } = await DB.createDocument({
+      title: file.name,
+      category: 'bylaws',
+      file_path: data.path,
+      uploaded_by: Auth.currentUser.id
+    });
+
+    if (dbError) {
+      Toast.show('File uploaded but failed to save record: ' + dbError.message, 'error');
+      e.target.value = '';
+      return;
+    }
+
+    Toast.show('Bylaws uploaded successfully.', 'success');
+    await loadDocuments();
+  } catch (err) {
+    console.error('Upload error:', err);
+    Toast.show('Upload failed: ' + (err.message || 'Unknown error. Check browser console.'), 'error');
+  }
+  e.target.value = '';
+}
+
+async function loadDocuments() {
+  const container = document.getElementById('documentsList');
+  if (!isSupabaseConfigured()) return;
+
+  try {
+    const { data: docs, error } = await DB.getDocuments('bylaws');
+    if (error || !docs || docs.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <h3>No bylaws uploaded yet</h3>
+          <p>Upload your TPC bylaws and governing documents here. They will be securely stored and accessible to all board members.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = docs.map(doc => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--linen);">
+        <div>
+          <div style="font-size:0.88rem;font-weight:500;color:var(--ink);">${escapeHtml(doc.title)}</div>
+          <div style="font-size:0.72rem;color:var(--warm-gray);">Uploaded ${new Date(doc.created_at).toLocaleDateString()}</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="viewDocument('${doc.file_path}')">View</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load documents:', err);
+  }
+}
+
+// ===== SIGNED DOCUMENTS =====
+
+async function handleSignedDocUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!isSupabaseConfigured()) {
+    Toast.show('Document upload requires Supabase connection. See SETUP.md.', 'info');
+    e.target.value = '';
+    return;
+  }
+
+  // Ask for member name
+  const memberName = prompt('Which board member signed this document?\n(e.g. JoYi, Alison, Kailani, Gabby, Jay, Kobe)');
+  if (!memberName) { e.target.value = ''; return; }
+
+  Toast.show('Uploading ' + file.name + '...', 'info');
+
+  try {
+    const { data, error } = await Storage.uploadDocument('signed', file);
+    if (error) {
+      Toast.show('Upload error: ' + (error.message || 'Unknown error'), 'error');
+      e.target.value = '';
+      return;
+    }
+
+    const { error: dbError } = await DB.createDocument({
+      title: memberName + ': ' + file.name,
+      category: 'signed_form',
+      file_path: data.path,
+      uploaded_by: Auth.currentUser.id
+    });
+
+    if (dbError) {
+      Toast.show('File uploaded but failed to save record: ' + dbError.message, 'error');
+      e.target.value = '';
+      return;
+    }
+
+    Toast.show('Signed document uploaded.', 'success');
+    await loadSignedDocs();
+  } catch (err) {
+    console.error('Upload error:', err);
+    Toast.show('Upload failed: ' + (err.message || 'Unknown error'), 'error');
+  }
+  e.target.value = '';
+}
+
+async function loadSignedDocs() {
+  const container = document.getElementById('signedDocsList');
+  if (!isSupabaseConfigured()) return;
+
+  try {
+    const { data: docs, error } = await DB.getDocuments('signed_form');
+    if (error || !docs || docs.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          <h3>No signed documents yet</h3>
+          <p>Upload conflict of interest forms, board agreements, and other signed documents here.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = docs.map(doc => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--linen);">
+        <div>
+          <div style="font-size:0.88rem;font-weight:500;color:var(--ink);">${escapeHtml(doc.title)}</div>
+          <div style="font-size:0.72rem;color:var(--warm-gray);">Uploaded ${new Date(doc.created_at).toLocaleDateString()}</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="viewDocument('${doc.file_path}')">View</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load signed docs:', err);
+  }
+}
+
+async function viewDocument(filePath) {
+  const { url, error } = await Storage.getSignedUrl(Storage.buckets.documents, filePath);
+  if (error) {
+    Toast.show('Could not open file: ' + error.message, 'error');
+    return;
+  }
+  window.open(url, '_blank');
+}
+</script>
+</body>
+</html>

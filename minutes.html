@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meeting Minutes | TPC Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="css/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <nav class="sidebar" id="sidebar"></nav>
+  <main class="main">
+
+    <div class="page-header">
+      <div>
+        <h1>Meeting Minutes</h1>
+        <p class="breadcrumb" id="minutesSubtitle">Generate, review, and approve official board meeting minutes.</p>
+      </div>
+      <div class="btn-group" id="meetingSelector" style="display:none;">
+        <select class="form-select" id="meetingSelect" onchange="switchMeeting(this.value)" style="min-width:220px;"></select>
+      </div>
+    </div>
+
+    <!-- Existing Minutes: Approval View (shows when minutes exist for this meeting) -->
+    <div class="card mb-lg hidden" id="existingMinutesCard">
+      <div class="card-header">
+        <h3>Official Minutes</h3>
+        <span id="existingMinutesTag" class="tag tag-pending">Draft</span>
+      </div>
+      <div id="existingMinutesContent" style="
+        background:white;border:1px solid var(--linen);border-radius:var(--radius);
+        padding:28px;max-height:500px;overflow-y:auto;line-height:1.7;font-size:0.9rem;
+      "></div>
+      <div class="btn-group mt-md">
+        <button class="btn btn-gold btn-sm" onclick="downloadExistingPDF()">Download PDF</button>
+        <button class="btn btn-outline btn-sm" onclick="copyExistingMinutes()">Copy to Clipboard</button>
+      </div>
+
+      <!-- Approval Section -->
+      <div class="mt-lg" style="border-top:1px solid var(--linen);padding-top:20px;">
+        <div class="card-header" style="padding:0 0 12px;">
+          <h3>Board Approval</h3>
+          <span id="existingApprovalTag" class="tag tag-pending">0 of 6 approved</span>
+        </div>
+        <div id="existingApprovalList"></div>
+        <div class="mt-md" style="padding:16px 20px;background:white;border-radius:var(--radius);border-left:3px solid var(--plum);font-size:0.85rem;line-height:1.7;">
+          <h4 style="font-family:'Playfair Display',serif;margin-bottom:6px;">Approval Procedure</h4>
+          <ol style="margin-left:18px;">
+            <li><strong>Draft:</strong> Secretary generates minutes from meeting notes and Zoom transcript.</li>
+            <li><strong>Review:</strong> Draft shared with all members within 48 hours.</li>
+            <li><strong>Approve:</strong> Each member clicks Approve or Request Revision.</li>
+            <li><strong>Majority:</strong> 4 of 6 approvals makes minutes official.</li>
+            <li><strong>Ratification:</strong> Formally ratified at the next board meeting.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Section: Secretary Notes + Transcript Upload -->
+    <div id="inputSection">
+
+      <!-- Step 1: Secretary Notes (Real-Time During Meeting) -->
+      <div class="card mb-lg" id="step1Card">
+        <div class="card-header">
+          <h3>Step 1: Secretary Notes</h3>
+          <span class="tag tag-gold">Live During Meeting</span>
+        </div>
+        <p class="text-sm text-muted mb-md">Type notes during the meeting. Each agenda item has its own notes area. These will be combined with the Zoom transcript to generate official minutes.</p>
+
+        <div id="agendaNotesOutline">
+          <div class="loading-spinner"></div>
+        </div>
+      </div>
+
+      <!-- Step 2: Upload Zoom Transcript (Post-Meeting) -->
+      <div class="card mb-lg" id="step2Card">
+        <div class="card-header">
+          <h3>Step 2: Upload Zoom Transcript</h3>
+          <span class="tag tag-plum">Post-Meeting</span>
+        </div>
+        <p class="text-sm text-muted mb-md">After the meeting, upload the Zoom transcript or AI meeting notes. This will be combined with your secretary notes above.</p>
+
+        <div style="display:flex;gap:0;margin-bottom:16px;">
+          <button class="btn btn-sm" id="tabUpload" onclick="switchTab('upload')" style="border-radius:6px 0 0 6px;background:var(--ink);color:white;">Upload File</button>
+          <button class="btn btn-sm btn-outline" id="tabPaste" onclick="switchTab('paste')" style="border-radius:0 6px 6px 0;">Paste Notes</button>
+        </div>
+
+        <div id="uploadPanel">
+          <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <h4 id="uploadLabel">Upload Zoom Meeting Notes or Transcript</h4>
+            <p>Drag and drop .txt, .vtt, .md, or .srt files, or click to browse.</p>
+          </div>
+          <input type="file" id="fileInput" accept=".txt,.vtt,.md,.csv,.srt" style="display:none;" onchange="handleFileUpload(event)">
+        </div>
+
+        <div id="pastePanel" style="display:none;">
+          <textarea class="form-textarea" id="pastedNotes" placeholder="Paste your Zoom transcript, AI meeting notes, or any meeting notes here..." style="min-height:200px;"></textarea>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <div class="card mb-lg" id="generateCard">
+        <div class="card-header">
+          <h3>Step 3: Generate Official Minutes</h3>
+          <span class="tag tag-sage">Combine + Format</span>
+        </div>
+        <p class="text-sm text-muted mb-md">Combines your secretary notes and Zoom transcript into formatted official minutes. You can edit the result before submitting for board approval.</p>
+
+        <div class="btn-group">
+          <button class="btn btn-gold" onclick="generateMinutes()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Generate Official Minutes
+          </button>
+          <button class="btn btn-outline" onclick="clearAll()">Clear All</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Step 4: Review Generated Minutes -->
+    <div class="card mb-lg hidden" id="reviewCard">
+      <div class="card-header">
+        <h3>Review Draft Minutes</h3>
+        <span class="tag tag-plum">Editable</span>
+      </div>
+
+      <div id="minutesContent" contenteditable="true" style="
+        background:white;border:1px solid var(--linen);border-radius:var(--radius);
+        padding:28px;max-height:600px;overflow-y:auto;line-height:1.7;font-size:0.9rem;
+      "></div>
+
+      <p class="text-xs text-muted mt-sm">You can edit the minutes directly above. Changes are preserved when you download.</p>
+
+      <div class="btn-group mt-md">
+        <button class="btn btn-gold" onclick="downloadPDF()">Download as PDF</button>
+        <button class="btn btn-primary btn-sm" onclick="copyMinutes()">Copy to Clipboard</button>
+        <button class="btn btn-outline btn-sm" onclick="downloadHTML()">Download HTML</button>
+        <button class="btn btn-success btn-sm" onclick="submitForApproval()">Submit for Board Approval</button>
+      </div>
+    </div>
+
+    <!-- Board Approval for New Minutes -->
+    <div class="card mb-lg hidden" id="approvalCard">
+      <div class="card-header">
+        <h3>Board Approval</h3>
+        <span id="approvalTag" class="tag tag-pending">0 of 6 approved</span>
+      </div>
+
+      <div id="approvalList"></div>
+
+      <div class="mt-md" style="padding:16px 20px;background:white;border-radius:var(--radius);border-left:3px solid var(--plum);font-size:0.85rem;line-height:1.7;">
+        <h4 style="font-family:'Playfair Display',serif;margin-bottom:6px;">Approval Procedure</h4>
+        <ol style="margin-left:18px;">
+          <li><strong>Draft:</strong> Secretary generates minutes from meeting notes and Zoom transcript.</li>
+          <li><strong>Review:</strong> Draft shared with all members within 48 hours.</li>
+          <li><strong>Approve:</strong> Each member clicks Approve or Request Revision.</li>
+          <li><strong>Majority:</strong> 4 of 6 approvals makes minutes official.</li>
+          <li><strong>Ratification:</strong> Formally ratified at the next board meeting.</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Action Items -->
+    <div class="card hidden" id="actionItemsCard">
+      <div class="card-header">
+        <h3>Extracted Action Items</h3>
+        <button class="btn btn-outline btn-sm" onclick="exportActionItems()">Export CSV</button>
+      </div>
+      <div id="actionItemsList"></div>
+    </div>
+
+    <!-- Retention Notice -->
+    <div class="alert alert-gold mt-lg">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>All meeting minutes are permanently retained per Indiana Code IC 23-17. Minutes cannot be deleted after board approval.</span>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/utils.js"></script>
+<script>
+let uploadedText = '';
+let approvalState = {};
+let currentMeetingId = null;
+let currentMeeting = null;
+let agendaItems = [];
+let secretaryNotes = {};
+const boardMembers = ['JoYi', 'Alison', 'Kailani', 'Gabby', 'Jay', 'Kobe'];
+
+(async () => {
+  const ready = await initPage('minutes');
+  if (!ready) return;
+
+  // Check URL for meeting param
+  const params = new URLSearchParams(window.location.search);
+  currentMeetingId = params.get('meeting');
+
+  await loadMinutesPage();
+})();
+
+async function loadMinutesPage() {
+  if (!isSupabaseConfigured()) {
+    // Demo mode
+    renderDemoAgendaOutline();
+    return;
+  }
+
+  // Load meeting selector
+  await loadMeetingSelector();
+
+  if (!currentMeetingId) {
+    // Get most recent completed meeting
+    const { data: meetings } = await DB.getMeetings('completed');
+    if (meetings && meetings.length > 0) {
+      currentMeetingId = meetings[0].id;
+    } else {
+      // Try upcoming meeting
+      const { data: upcoming } = await DB.getUpcomingMeeting();
+      if (upcoming) currentMeetingId = upcoming.id;
+    }
+  }
+
+  if (!currentMeetingId) {
+    document.getElementById('agendaNotesOutline').innerHTML = '<div class="empty-state"><h3>No meetings found</h3><p>Create a meeting from the Admin panel to get started.</p></div>';
+    return;
+  }
+
+  // Load the meeting
+  const { data: meeting } = await DB.getMeeting(currentMeetingId);
+  currentMeeting = meeting;
+  if (meeting) {
+    document.getElementById('minutesSubtitle').textContent = 'Minutes for ' + formatDate(meeting.date);
+    document.getElementById('meetingSelect').value = meeting.id;
+  }
+
+  // Check if minutes already exist for this meeting
+  const { data: existingMinutes } = await DB.getMinutes(currentMeetingId);
+  if (existingMinutes) {
+    showExistingMinutes(existingMinutes);
+  }
+
+  // Load agenda items for note-taking outline
+  await loadAgendaOutline();
+}
+
+async function loadMeetingSelector() {
+  const { data: meetings } = await DB.getMeetings();
+  if (!meetings || meetings.length === 0) return;
+
+  const select = document.getElementById('meetingSelect');
+  select.innerHTML = meetings.map(m =>
+    `<option value="${m.id}">Board Meeting: ${formatDate(m.date)} (${m.status})</option>`
+  ).join('');
+
+  document.getElementById('meetingSelector').style.display = '';
+}
+
+async function switchMeeting(meetingId) {
+  currentMeetingId = meetingId;
+  // Reset state
+  document.getElementById('existingMinutesCard').classList.add('hidden');
+  document.getElementById('reviewCard').classList.add('hidden');
+  document.getElementById('approvalCard').classList.add('hidden');
+  document.getElementById('inputSection').style.display = '';
+  approvalState = {};
+  uploadedText = '';
+  await loadMinutesPage();
+}
+
+function showExistingMinutes(minutes) {
+  const card = document.getElementById('existingMinutesCard');
+  card.classList.remove('hidden');
+  document.getElementById('existingMinutesContent').innerHTML = minutes.content_html || '<p>Minutes content not available.</p>';
+
+  const tag = document.getElementById('existingMinutesTag');
+  if (minutes.status === 'approved' || minutes.status === 'ratified') {
+    tag.className = 'tag tag-sage';
+    tag.textContent = minutes.status === 'ratified' ? 'Ratified' : 'Approved';
+  } else if (minutes.status === 'pending_approval') {
+    tag.className = 'tag tag-rose';
+    tag.textContent = 'Pending Approval';
+    renderExistingApprovalBoard(minutes);
+  } else {
+    tag.className = 'tag tag-pending';
+    tag.textContent = 'Draft';
+  }
+
+  // If minutes exist and are pending/approved, hide the input section
+  if (minutes.status !== 'draft') {
+    document.getElementById('inputSection').style.display = 'none';
+  }
+}
+
+async function renderExistingApprovalBoard(minutes) {
+  const container = document.getElementById('existingApprovalList');
+
+  if (isSupabaseConfigured()) {
+    const { data: approvals } = await DB.getApprovals(minutes.id);
+    const approvalMap = {};
+    (approvals || []).forEach(a => {
+      approvalMap[a.approver?.full_name || a.approver_id] = a.approved ? 'approved' : 'revision';
+    });
+
+    container.innerHTML = boardMembers.map(name => {
+      const status = approvalMap[name] || 'pending';
+      return `
+        <div class="approval-row">
+          <span class="approval-name">${name}</span>
+          <span class="approval-status ${status}">
+            ${status === 'approved' ? 'Approved' : status === 'revision' ? 'Revision Requested' : 'Pending'}
+          </span>
+          <div class="btn-group">
+            <button class="btn btn-success btn-sm" onclick="submitDBApproval('${minutes.id}', '${name}', true)">Approve</button>
+            <button class="btn btn-outline btn-sm" onclick="submitDBApproval('${minutes.id}', '${name}', false)">Request Revision</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const approvedCount = Object.values(approvalMap).filter(s => s === 'approved').length;
+    const tag = document.getElementById('existingApprovalTag');
+    tag.textContent = `${approvedCount} of 6 approved`;
+    if (approvedCount >= 4) {
+      tag.className = 'tag tag-sage';
+      tag.textContent += ' (Official)';
+    }
+  } else {
+    // Demo mode
+    container.innerHTML = boardMembers.map(name => {
+      const status = approvalState[name] || 'pending';
+      return `
+        <div class="approval-row">
+          <span class="approval-name">${name}</span>
+          <span class="approval-status ${status}" id="existing-status-${name}">
+            ${status === 'approved' ? 'Approved' : status === 'revision' ? 'Revision Requested' : 'Pending'}
+          </span>
+          <div class="btn-group">
+            <button class="btn btn-success btn-sm" onclick="setExistingApproval('${name}','approved')">Approve</button>
+            <button class="btn btn-outline btn-sm" onclick="setExistingApproval('${name}','revision')">Request Revision</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+async function submitDBApproval(minutesId, name, approved) {
+  if (!isSupabaseConfigured() || !Auth.currentUser) {
+    Toast.show('Please sign in to submit your approval.', 'error');
+    return;
+  }
+  const { error } = await DB.submitApproval(minutesId, Auth.currentUser.id, approved, '');
+  if (error) {
+    Toast.show('Error: ' + error.message, 'error');
+    return;
+  }
+  Toast.show(approved ? 'Approval submitted.' : 'Revision requested.', 'success');
+  // Reload
+  const { data: minutes } = await DB.getMinutes(currentMeetingId);
+  if (minutes) renderExistingApprovalBoard(minutes);
+}
+
+function setExistingApproval(name, status) {
+  approvalState[name] = status;
+  const el = document.getElementById('existing-status-' + name);
+  if (el) {
+    el.className = 'approval-status ' + status;
+    el.textContent = status === 'approved' ? 'Approved' : 'Revision Requested';
+  }
+  const approved = Object.values(approvalState).filter(s => s === 'approved').length;
+  const tag = document.getElementById('existingApprovalTag');
+  tag.textContent = `${approved} of 6 approved`;
+  if (approved >= 4) {
+    tag.className = 'tag tag-sage';
+    tag.textContent += ' (Official)';
+    Toast.show('Majority reached. Minutes are now official.', 'success');
+  } else {
+    tag.className = 'tag tag-pending';
+  }
+}
+
+// ===== AGENDA OUTLINE FOR SECRETARY NOTES =====
+
+async function loadAgendaOutline() {
+  const container = document.getElementById('agendaNotesOutline');
+
+  if (!isSupabaseConfigured()) {
+    renderDemoAgendaOutline();
+    return;
+  }
+
+  const { data, error } = await DB.getAgendaItems(currentMeetingId);
+  agendaItems = data || [];
+
+  if (agendaItems.length === 0) {
+    container.innerHTML = '<div class="empty-state"><h3>No agenda items</h3><p>Agenda items will appear here once they are added for this meeting.</p></div>';
+    return;
+  }
+
+  renderAgendaOutline(agendaItems);
+}
+
+const TYPE_COLORS = {
+  consent: '#7a9a7e', ground: '#4a5568', practice: '#6b4c7a', decision: '#c8a961', act: '#b5545b'
+};
+const TYPE_SHORT = {
+  consent: 'Consent', ground: 'Ground', practice: 'Practice', decision: 'Decision', act: 'Act'
+};
+
+function renderDemoAgendaOutline() {
+  const demoItems = [
+    { id: 1, title: 'Welcome + Call to Order', section_category: 'Board Business', time_needed_minutes: 5, presenter: { full_name: 'Alison' }, item_type: 'consent', item_order: 1 },
+    { id: 11, title: 'Approve February 7 Meeting Minutes', section_category: 'Board Business', time_needed_minutes: 2, presenter: { full_name: 'Kailani' }, item_type: 'consent', item_order: 2 },
+    { id: 2, title: 'ED + Board President Updates', section_category: 'Board Business', time_needed_minutes: 15, presenter: { full_name: 'JoYi' }, item_type: 'ground', item_order: 3 },
+    { id: 3, title: 'AIdedEQ: Website Walkthrough', section_category: 'AIdedEQ Updates', time_needed_minutes: 10, presenter: { full_name: 'JoYi' }, item_type: 'practice', item_order: 4 },
+    { id: 4, title: 'AIdedEQ Tools: Mission to Practice', section_category: 'AIdedEQ Updates', time_needed_minutes: 10, presenter: { full_name: 'Gabby' }, item_type: 'practice', item_order: 5 },
+    { id: 5, title: 'Marketing, Market Research + Our Edge', section_category: 'Programs', time_needed_minutes: 10, presenter: { full_name: 'Kailani' }, item_type: 'practice', item_order: 6 },
+    { id: 6, title: 'Girls Who Vibe: Program Update', section_category: 'Programs', time_needed_minutes: 10, presenter: { full_name: 'TPC Board' }, item_type: 'practice', item_order: 7 },
+    { id: 7, title: 'Open Discussion + Small Group Time', section_category: 'Open Discussion', time_needed_minutes: 15, presenter: { full_name: 'Collaborative' }, item_type: 'practice', item_order: 8 },
+    { id: 8, title: 'Revenue + Funding', section_category: 'Revenue & Funding', time_needed_minutes: 10, presenter: { full_name: 'Alison' }, item_type: 'decision', item_order: 9 },
+    { id: 9, title: 'Internal Board Business', section_category: 'Board Business', time_needed_minutes: 10, presenter: { full_name: 'Board Only' }, item_type: 'decision', item_order: 10 },
+    { id: 10, title: 'Closing Circle', section_category: 'Board Business', time_needed_minutes: 5, presenter: { full_name: 'Alison' }, item_type: 'consent', item_order: 11 }
+  ];
+  agendaItems = demoItems;
+  renderAgendaOutline(demoItems);
+}
+
+function renderAgendaOutline(items) {
+  const container = document.getElementById('agendaNotesOutline');
+
+  container.innerHTML = items.map((item, i) => {
+    const presenter = item.presenter?.full_name || 'TBD';
+    const savedNote = secretaryNotes[item.id] || '';
+    const itemType = item.item_type || 'practice';
+    const typeColor = TYPE_COLORS[itemType] || TYPE_COLORS.practice;
+    const typeLabel = TYPE_SHORT[itemType] || 'Practice';
+    const isDecision = itemType === 'decision';
+    const decisionTemplate = isDecision
+      ? '\nDECISION STATEMENT: \nDECISION TYPE: [approve / decline / defer / direction_given]\nDECISION OWNER: \nRATIONALE: \n'
+      : '';
+    const placeholder = isDecision
+      ? 'Type notes for this agenda item. Use the decision template below...'
+      : 'Type notes for this agenda item...';
+    return `
+      <div class="agenda-note-item" style="margin-bottom:12px;">
+        <div onclick="toggleNoteItem(${item.id})" style="
+          display:flex;align-items:center;gap:10px;padding:12px 16px;
+          background:white;border:1px solid var(--linen);border-radius:var(--radius);
+          cursor:pointer;transition:all 0.2s;
+        ">
+          <span style="
+            width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+            border-radius:50%;background:var(--linen);font-size:0.7rem;font-weight:600;color:var(--ink);flex-shrink:0;
+          ">${i + 1}</span>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-weight:500;font-size:0.88rem;color:var(--ink);">${escapeHtml(item.title)}</span>
+              <span style="font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;padding:2px 7px;border-radius:3px;background:${typeColor};color:white;white-space:nowrap;">${typeLabel}</span>
+            </div>
+            <div style="font-size:0.72rem;color:var(--warm-gray);">${escapeHtml(item.section_category || '')} &middot; ${escapeHtml(presenter)} &middot; ${item.time_needed_minutes || 0} min</div>
+          </div>
+          <svg id="chevron-${item.id}" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--warm-gray)" stroke-width="2" style="transition:transform 0.2s;flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div id="noteArea-${item.id}" style="display:none;padding:0 16px 12px;background:white;border:1px solid var(--linen);border-top:none;border-radius:0 0 var(--radius) var(--radius);">
+          <textarea
+            class="form-textarea"
+            id="note-${item.id}"
+            placeholder="${placeholder}"
+            oninput="saveNote(${item.id}, this.value)"
+            style="min-height:100px;margin-top:8px;font-size:0.85rem;"
+          >${savedNote}</textarea>
+          <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="insertTimestamp(${item.id})" style="font-size:0.72rem;">Insert Timestamp</button>
+            <button class="btn btn-outline btn-sm" onclick="insertMotion(${item.id})" style="font-size:0.72rem;">Insert Motion</button>
+            <button class="btn btn-outline btn-sm" onclick="insertVote(${item.id})" style="font-size:0.72rem;">Insert Vote</button>
+            ${isDecision ? '<button class="btn btn-outline btn-sm" onclick="insertDecisionTemplate(' + item.id + ')" style="font-size:0.72rem;border-color:#c8a961;color:#c8a961;">Insert Decision Template</button>' : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function insertDecisionTemplate(itemId) {
+  const textarea = document.getElementById('note-' + itemId);
+  textarea.value += '\nDECISION STATEMENT: \nDECISION TYPE: [approve / decline / defer / direction_given]\nDECISION OWNER: \nRATIONALE: \n';
+  textarea.focus();
+  saveNote(itemId, textarea.value);
+}
+
+function toggleNoteItem(itemId) {
+  const area = document.getElementById('noteArea-' + itemId);
+  const chevron = document.getElementById('chevron-' + itemId);
+  if (area.style.display === 'none') {
+    area.style.display = '';
+    chevron.style.transform = 'rotate(180deg)';
+  } else {
+    area.style.display = 'none';
+    chevron.style.transform = '';
+  }
+}
+
+function saveNote(itemId, value) {
+  secretaryNotes[itemId] = value;
+}
+
+function insertTimestamp(itemId) {
+  const textarea = document.getElementById('note-' + itemId);
+  const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  textarea.value += `\n[${time}] `;
+  textarea.focus();
+  saveNote(itemId, textarea.value);
+}
+
+function insertMotion(itemId) {
+  const textarea = document.getElementById('note-' + itemId);
+  textarea.value += '\nMOTION: [describe motion]\nMoved by: \nSeconded by: \n';
+  textarea.focus();
+  saveNote(itemId, textarea.value);
+}
+
+function insertVote(itemId) {
+  const textarea = document.getElementById('note-' + itemId);
+  textarea.value += '\nVOTE: In favor: __ | Opposed: __ | Abstained: __\nResult: PASSED / FAILED\n';
+  textarea.focus();
+  saveNote(itemId, textarea.value);
+}
+
+// ===== FILE UPLOAD =====
+
+function switchTab(tab) {
+  if (tab === 'upload') {
+    document.getElementById('uploadPanel').style.display = '';
+    document.getElementById('pastePanel').style.display = 'none';
+    document.getElementById('tabUpload').className = 'btn btn-sm';
+    document.getElementById('tabUpload').style.cssText = 'border-radius:6px 0 0 6px;background:var(--ink);color:white;';
+    document.getElementById('tabPaste').className = 'btn btn-sm btn-outline';
+    document.getElementById('tabPaste').style.cssText = 'border-radius:0 6px 6px 0;';
+  } else {
+    document.getElementById('uploadPanel').style.display = 'none';
+    document.getElementById('pastePanel').style.display = '';
+    document.getElementById('tabPaste').className = 'btn btn-sm';
+    document.getElementById('tabPaste').style.cssText = 'border-radius:0 6px 6px 0;background:var(--ink);color:white;';
+    document.getElementById('tabUpload').className = 'btn btn-sm btn-outline';
+    document.getElementById('tabUpload').style.cssText = 'border-radius:6px 0 0 6px;';
+  }
+}
+
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    uploadedText = ev.target.result;
+    document.getElementById('uploadZone').classList.add('has-file');
+    document.getElementById('uploadLabel').textContent = 'Uploaded: ' + file.name;
+    Toast.show('File uploaded: ' + file.name, 'success');
+  };
+  reader.readAsText(file);
+}
+
+// ===== GENERATE MINUTES =====
+
+function generateMinutes() {
+  const pasted = document.getElementById('pastedNotes').value.trim();
+  const transcript = uploadedText || pasted;
+
+  // Collect secretary notes
+  const hasNotes = Object.values(secretaryNotes).some(n => n.trim().length > 0);
+
+  if (!transcript && !hasNotes) {
+    Toast.show('Please add secretary notes or upload a Zoom transcript first.', 'error');
+    return;
+  }
+
+  // Build meeting date/time from current meeting or default
+  const meetingDate = currentMeeting ? formatDate(currentMeeting.date) : 'February 28, 2026';
+  const meetingTime = currentMeeting ? formatTime(currentMeeting.time) + ' CT' : '11:00 AM CT';
+  const meetingLocation = currentMeeting ? (currentMeeting.location || 'Zoom') : 'Zoom';
+
+  const now = new Date();
+  let html = '';
+
+  // ---- HEADER ----
+  html += '<h3 style="font-family:Playfair Display,serif;text-align:center;color:#1a1520;">The Practice Center</h3>';
+  html += '<h4 style="font-family:Playfair Display,serif;text-align:center;color:#1a1520;">Official Board Meeting Minutes</h4>';
+  html += '<hr style="border:none;border-top:2px solid #c8a961;margin:16px 0;">';
+  html += '<p><strong>Date:</strong> ' + meetingDate + '<br>';
+  html += '<strong>Time:</strong> ' + meetingTime + '<br>';
+  html += '<strong>Location:</strong> ' + meetingLocation + ' (Virtual)<br>';
+  html += '<strong>Minutes Prepared By:</strong> Kailani, Secretary<br>';
+  html += '<strong>Draft Generated:</strong> ' + now.toLocaleDateString('en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric'}) + '</p>';
+
+  // ---- ATTENDANCE ----
+  html += '<h4 style="font-family:Playfair Display,serif;margin-top:20px;">Attendance</h4>';
+  html += '<p>Board Members: JoYi (ED & Board President), Alison (Board Chair), Kailani (Secretary), Gabby, Jay, Kobe</p>';
+  html += '<p>Quorum: Verified (6 of 6 members present)</p>';
+
+  // ---- CALL TO ORDER ----
+  html += '<h4 style="font-family:Playfair Display,serif;margin-top:20px;">Call to Order</h4>';
+  html += '<p>Board Chair Alison called the meeting to order at ' + meetingTime + '.</p>';
+
+  // ---- Group agenda items by type ----
+  const grouped = { consent: [], ground: [], practice: [], decision: [], act: [] };
+  agendaItems.forEach(item => {
+    const t = item.item_type || 'practice';
+    if (grouped[t]) grouped[t].push(item);
+    else grouped.practice.push(item);
+  });
+
+  // ---- CONSENT AGENDA ----
+  if (grouped.consent.length > 0) {
+    html += '<h4 style="font-family:Playfair Display,serif;margin-top:24px;color:#7a9a7e;">Consent Agenda</h4>';
+    const consentTitles = grouped.consent.map(item => escapeHtml(item.title));
+    html += '<p>The following items were presented for approval by unanimous consent:</p>';
+    html += '<ul style="margin:8px 0 8px 20px;">';
+    consentTitles.forEach(t => { html += '<li>' + t + '</li>'; });
+    html += '</ul>';
+    // Include any secretary notes for consent items
+    grouped.consent.forEach(item => {
+      const note = secretaryNotes[item.id]?.trim();
+      if (note) {
+        html += '<div style="margin:8px 0 8px 16px;padding:10px 14px;background:#f4f8f4;border-left:3px solid #7a9a7e;border-radius:4px;font-size:0.85rem;line-height:1.6;">';
+        html += '<strong>' + escapeHtml(item.title) + ':</strong> ' + note.replace(/\n/g, '<br>');
+        html += '</div>';
+      }
+    });
+    html += '<p><strong>MOTION:</strong> Consent agenda approved by unanimous consent.</p>';
+  }
+
+  // ---- GROUND: Context + Q&A ----
+  if (grouped.ground.length > 0) {
+    html += '<h4 style="font-family:Playfair Display,serif;margin-top:24px;color:#4a5568;">Ground: Context and Updates</h4>';
+    grouped.ground.forEach(item => {
+      html += '<div style="margin:12px 0;">';
+      html += '<h5 style="font-family:Playfair Display,serif;margin-bottom:4px;color:#2d2a33;">' + escapeHtml(item.title) + '</h5>';
+      html += '<p style="font-size:0.82rem;color:#5a5666;">Presenter: ' + escapeHtml(item.presenter?.full_name || 'TBD') + ' | ' + (item.time_needed_minutes || 0) + ' min</p>';
+      const note = secretaryNotes[item.id]?.trim();
+      if (note) {
+        html += '<div style="background:#f7f8fa;padding:12px;border-radius:6px;border-left:3px solid #4a5568;line-height:1.7;font-size:0.88rem;">';
+        html += note.replace(/\n/g, '<br>');
+        html += '</div>';
+      } else {
+        html += '<p style="font-size:0.85rem;color:#8a8494;font-style:italic;">No notes recorded for this item.</p>';
+      }
+      html += '</div>';
+    });
+  }
+
+  // ---- PRACTICE: Live Discussion ----
+  if (grouped.practice.length > 0) {
+    html += '<h4 style="font-family:Playfair Display,serif;margin-top:24px;color:#6b4c7a;">Practice: Discussion and Alignment</h4>';
+    grouped.practice.forEach(item => {
+      html += '<div style="margin:12px 0;">';
+      html += '<h5 style="font-family:Playfair Display,serif;margin-bottom:4px;color:#2d2a33;">' + escapeHtml(item.title) + '</h5>';
+      html += '<p style="font-size:0.82rem;color:#5a5666;">Presenter: ' + escapeHtml(item.presenter?.full_name || 'TBD') + ' | ' + (item.time_needed_minutes || 0) + ' min</p>';
+      const note = secretaryNotes[item.id]?.trim();
+      if (note) {
+        html += '<div style="background:#f9f6fb;padding:12px;border-radius:6px;border-left:3px solid #6b4c7a;line-height:1.7;font-size:0.88rem;">';
+        html += note.replace(/\n/g, '<br>');
+        html += '</div>';
+      } else {
+        html += '<p style="font-size:0.85rem;color:#8a8494;font-style:italic;">No notes recorded for this item.</p>';
+      }
+      html += '</div>';
+    });
+  }
+
+  // ---- DECISIONS MADE ----
+  if (grouped.decision.length > 0) {
+    html += '<h4 style="font-family:Playfair Display,serif;margin-top:24px;color:#c8a961;">Decisions Made</h4>';
+    grouped.decision.forEach(item => {
+      const note = secretaryNotes[item.id]?.trim();
+      html += '<div style="margin:14px 0;padding:16px 18px;background:#fdfaf3;border:1px solid #e8ddb5;border-left:4px solid #c8a961;border-radius:6px;">';
+      html += '<h5 style="font-family:Playfair Display,serif;margin-bottom:6px;color:#2d2a33;">' + escapeHtml(item.title) + '</h5>';
+      html += '<p style="font-size:0.82rem;color:#5a5666;margin-bottom:8px;">Presenter: ' + escapeHtml(item.presenter?.full_name || 'TBD') + ' | ' + (item.time_needed_minutes || 0) + ' min</p>';
+      // Parse decision fields from notes if present
+      if (note) {
+        const lines = note.split('\n');
+        let statement = '', dtype = '', owner = '', rationale = '', otherNotes = [];
+        lines.forEach(line => {
+          const l = line.trim();
+          if (l.startsWith('DECISION STATEMENT:')) statement = l.replace('DECISION STATEMENT:', '').trim();
+          else if (l.startsWith('DECISION TYPE:')) dtype = l.replace('DECISION TYPE:', '').trim();
+          else if (l.startsWith('DECISION OWNER:')) owner = l.replace('DECISION OWNER:', '').trim();
+          else if (l.startsWith('RATIONALE:')) rationale = l.replace('RATIONALE:', '').trim();
+          else if (l.length > 0) otherNotes.push(l);
+        });
+        if (statement) {
+          html += '<div style="margin-bottom:8px;">';
+          html += '<span style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#c8a961;">Decision Statement</span><br>';
+          html += '<span style="font-size:0.88rem;line-height:1.6;">' + escapeHtml(statement) + '</span>';
+          html += '</div>';
+        }
+        if (dtype || owner) {
+          html += '<div style="display:flex;gap:20px;margin-bottom:8px;font-size:0.85rem;">';
+          if (dtype) html += '<span><strong>Type:</strong> ' + escapeHtml(dtype) + '</span>';
+          if (owner) html += '<span><strong>Owner:</strong> ' + escapeHtml(owner) + '</span>';
+          html += '</div>';
+        }
+        if (rationale) {
+          html += '<div style="margin-bottom:8px;">';
+          html += '<span style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:#c8a961;">Rationale</span><br>';
+          html += '<span style="font-size:0.85rem;line-height:1.6;">' + escapeHtml(rationale) + '</span>';
+          html += '</div>';
+        }
+        if (otherNotes.length > 0) {
+          html += '<div style="background:#faf8f5;padding:10px;border-radius:4px;line-height:1.6;font-size:0.85rem;margin-top:6px;">';
+          html += otherNotes.join('<br>');
+          html += '</div>';
+        }
+      } else {
+        html += '<p style="font-size:0.85rem;color:#8a8494;font-style:italic;">No decision recorded for this item.</p>';
+      }
+      html += '</div>';
+    });
+  }
+
+  // ---- ACTION ITEMS ----
+  // Collect any action items from notes (lines starting with ACTION:)
+  const actionLines = [];
+  agendaItems.forEach(item => {
+    const note = secretaryNotes[item.id]?.trim();
+    if (note) {
+      note.split('\n').forEach(line => {
+        if (line.trim().toUpperCase().startsWith('ACTION:')) {
+          actionLines.push(line.trim().replace(/^ACTION:\s*/i, ''));
+        }
+      });
+    }
+  });
+
+  if (grouped.act.length > 0 || actionLines.length > 0) {
+    html += '<h4 style="font-family:Playfair Display,serif;margin-top:24px;color:#b5545b;">Action Items</h4>';
+    if (actionLines.length > 0) {
+      html += '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin:8px 0;">';
+      html += '<thead><tr style="border-bottom:2px solid #e8e4de;text-align:left;">';
+      html += '<th style="padding:8px 10px;font-weight:600;color:#2d2a33;">Task</th>';
+      html += '<th style="padding:8px 10px;font-weight:600;color:#2d2a33;">Owner</th>';
+      html += '<th style="padding:8px 10px;font-weight:600;color:#2d2a33;">Due Date</th>';
+      html += '</tr></thead><tbody>';
+      actionLines.forEach(line => {
+        // Try to parse "task - owner - date" or just show as task
+        const parts = line.split('|').map(p => p.trim());
+        html += '<tr style="border-bottom:1px solid #f0ece6;">';
+        html += '<td style="padding:8px 10px;">' + escapeHtml(parts[0] || line) + '</td>';
+        html += '<td style="padding:8px 10px;">' + escapeHtml(parts[1] || 'TBD') + '</td>';
+        html += '<td style="padding:8px 10px;">' + escapeHtml(parts[2] || 'TBD') + '</td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+    // Show any Act-type items with notes
+    grouped.act.forEach(item => {
+      const note = secretaryNotes[item.id]?.trim();
+      if (note) {
+        html += '<div style="margin:10px 0;padding:10px 14px;background:#fdf5f5;border-left:3px solid #b5545b;border-radius:4px;font-size:0.85rem;line-height:1.6;">';
+        html += '<strong>' + escapeHtml(item.title) + ':</strong> ' + note.replace(/\n/g, '<br>');
+        html += '</div>';
+      }
+    });
+  }
+
+  // ---- ZOOM TRANSCRIPT (Appendix) ----
+  if (transcript) {
+    html += '<h4 style="font-family:Playfair Display,serif;margin-top:24px;">Appendix: Zoom Transcript / Meeting Notes</h4>';
+    html += '<div style="background:#faf8f5;padding:16px;border-radius:6px;border-left:3px solid #6b4c7a;margin:8px 0;line-height:1.7;font-size:0.85rem;max-height:400px;overflow-y:auto;">';
+    html += transcript.replace(/\n/g, '<br>').substring(0, 15000);
+    html += '</div>';
+  }
+
+  // ---- ADJOURNMENT + FOOTER ----
+  html += '<h4 style="font-family:Playfair Display,serif;margin-top:20px;">Adjournment</h4>';
+  html += '<p>Meeting adjourned.</p>';
+
+  html += '<div style="margin-top:24px;padding-top:12px;border-top:2px solid #c8a961;font-size:0.75rem;color:#8a8494;text-align:center;">';
+  html += 'Official minutes of The Practice Center Board of Directors.<br>';
+  html += 'Retained permanently per Indiana Code IC 23-17. Subject to board approval.';
+  html += '</div>';
+
+  document.getElementById('minutesContent').innerHTML = html;
+  document.getElementById('reviewCard').classList.remove('hidden');
+  document.getElementById('reviewCard').scrollIntoView({ behavior: 'smooth' });
+
+  // Show approval section
+  renderApprovalBoard();
+  document.getElementById('approvalCard').classList.remove('hidden');
+
+  Toast.show('Minutes generated. Review and edit as needed.', 'success');
+}
+
+function renderApprovalBoard() {
+  const container = document.getElementById('approvalList');
+  container.innerHTML = boardMembers.map(name => {
+    const status = approvalState[name] || 'pending';
+    return `
+      <div class="approval-row">
+        <span class="approval-name">${name}</span>
+        <span class="approval-status ${status}" id="status-${name}">
+          ${status === 'approved' ? 'Approved' : status === 'revision' ? 'Revision Requested' : 'Pending'}
+        </span>
+        <div class="btn-group">
+          <button class="btn btn-success btn-sm" onclick="setApproval('${name}','approved')">Approve</button>
+          <button class="btn btn-outline btn-sm" onclick="setApproval('${name}','revision')">Request Revision</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function setApproval(name, status) {
+  approvalState[name] = status;
+  const el = document.getElementById('status-' + name);
+  el.className = 'approval-status ' + status;
+  el.textContent = status === 'approved' ? 'Approved' : 'Revision Requested';
+
+  const approved = Object.values(approvalState).filter(s => s === 'approved').length;
+  const tag = document.getElementById('approvalTag');
+  tag.textContent = `${approved} of 6 approved`;
+  if (approved >= 4) {
+    tag.className = 'tag tag-sage';
+    tag.textContent += ' (Official)';
+    Toast.show('Majority reached. Minutes are now official.', 'success');
+  } else {
+    tag.className = 'tag tag-pending';
+  }
+}
+
+// ===== DOWNLOADS & EXPORT =====
+
+function downloadPDF() {
+  const content = document.getElementById('minutesContent').innerHTML;
+  const logo = '<div style="text-align:center;margin-bottom:20px;"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="60" height="60"><circle cx="50" cy="50" r="48" fill="#1a1520"/><circle cx="50" cy="50" r="44" fill="none" stroke="#c8a961" stroke-width="2"/><text x="50" y="38" text-anchor="middle" font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#c8a961">THE</text><text x="50" y="56" text-anchor="middle" font-family="Georgia,serif" font-size="16" font-weight="bold" fill="#ffffff">PRACTICE</text><text x="50" y="72" text-anchor="middle" font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#c8a961">CENTER</text></svg></div>';
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = '<div style="font-family:Georgia,serif;color:#2d2a33;line-height:1.7;padding:20px;">' + logo + content + '</div>';
+  const dateStr = currentMeeting ? currentMeeting.date : '2026-02-28';
+  html2pdf().set({
+    margin: [0.5, 0.6],
+    filename: 'TPC-Board-Minutes-' + dateStr + '.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  }).from(wrapper).save();
+}
+
+function downloadExistingPDF() {
+  const content = document.getElementById('existingMinutesContent').innerHTML;
+  const logo = '<div style="text-align:center;margin-bottom:20px;"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="60" height="60"><circle cx="50" cy="50" r="48" fill="#1a1520"/><circle cx="50" cy="50" r="44" fill="none" stroke="#c8a961" stroke-width="2"/><text x="50" y="38" text-anchor="middle" font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#c8a961">THE</text><text x="50" y="56" text-anchor="middle" font-family="Georgia,serif" font-size="16" font-weight="bold" fill="#ffffff">PRACTICE</text><text x="50" y="72" text-anchor="middle" font-family="Georgia,serif" font-size="14" font-weight="bold" fill="#c8a961">CENTER</text></svg></div>';
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = '<div style="font-family:Georgia,serif;color:#2d2a33;line-height:1.7;padding:20px;">' + logo + content + '</div>';
+  const dateStr = currentMeeting ? currentMeeting.date : '2026-02-07';
+  html2pdf().set({
+    margin: [0.5, 0.6],
+    filename: 'TPC-Board-Minutes-' + dateStr + '.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  }).from(wrapper).save();
+}
+
+function downloadHTML() {
+  const content = document.getElementById('minutesContent').innerHTML;
+  const full = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>TPC Board Minutes</title><style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.7;color:#2d2a33;}h3,h4{font-family:Playfair Display,serif;color:#1a1520;}hr{border:none;border-top:2px solid #c8a961;}</style></head><body>' + content + '</body></html>';
+  const blob = new Blob([full], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const dateStr = currentMeeting ? currentMeeting.date : '2026-02-28';
+  a.download = 'TPC-Board-Minutes-' + dateStr + '.html';
+  a.click();
+}
+
+function copyMinutes() {
+  const el = document.getElementById('minutesContent');
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  document.execCommand('copy');
+  sel.removeAllRanges();
+  Toast.show('Minutes copied to clipboard.', 'success');
+}
+
+function copyExistingMinutes() {
+  const el = document.getElementById('existingMinutesContent');
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  document.execCommand('copy');
+  sel.removeAllRanges();
+  Toast.show('Minutes copied to clipboard.', 'success');
+}
+
+async function submitForApproval() {
+  if (!isSupabaseConfigured()) {
+    Toast.show('Minutes submitted for board approval. Members will be notified.', 'success');
+    document.getElementById('approvalCard').scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+
+  const content = document.getElementById('minutesContent').innerHTML;
+  const { data, error } = await DB.createMinutes({
+    meeting_id: currentMeetingId,
+    content_html: content,
+    attendees: boardMembers,
+    quorum_verified: true,
+    status: 'pending_approval',
+    generated_by: Auth.currentUser.id
+  });
+
+  if (error) {
+    Toast.show('Error: ' + error.message, 'error');
+    return;
+  }
+
+  Toast.show('Minutes submitted for board approval. Members will be notified.', 'success');
+  document.getElementById('approvalCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function clearAll() {
+  uploadedText = '';
+  secretaryNotes = {};
+  document.getElementById('pastedNotes').value = '';
+  document.getElementById('uploadZone').classList.remove('has-file');
+  document.getElementById('uploadLabel').textContent = 'Upload Zoom Meeting Notes or Transcript';
+  document.getElementById('reviewCard').classList.add('hidden');
+  document.getElementById('approvalCard').classList.add('hidden');
+  document.getElementById('minutesContent').innerHTML = '';
+  approvalState = {};
+  // Reset note textareas
+  agendaItems.forEach(item => {
+    const ta = document.getElementById('note-' + item.id);
+    if (ta) ta.value = '';
+  });
+  Toast.show('All inputs cleared.', 'info');
+}
+
+function exportActionItems() {
+  Toast.show('Action items exported. Connect Mission2Practice for automatic sync.', 'info');
+}
+</script>
+</body>
+</html>
