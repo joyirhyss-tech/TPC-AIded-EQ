@@ -50,26 +50,38 @@ const Auth = {
   // Login with email + password
   async login(email, password) {
     if (!isSupabaseConfigured()) {
-      Toast.show('Demo mode: logged in as admin', 'info');
-      window.location.href = 'dashboard.html';
+      // Demo mode: set user state, let caller handle redirect
+      this.currentUser = { id: 'demo', email: email || 'demo@thepracticecenter.org' };
+      this.currentProfile = { id: 'demo', email: email || 'demo@thepracticecenter.org', full_name: 'Demo User', role: 'admin' };
       return { success: true };
     }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { success: false, error: error.message };
-    this.currentUser = data.user;
-    await this.loadProfile();
-    return { success: true };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return { success: false, error: error.message };
+      this.currentUser = data.user;
+      await this.loadProfile();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: 'Connection error. Please check your internet and try again.' };
+    }
   },
 
   // Send magic link
   async sendMagicLink(email) {
     if (!isSupabaseConfigured()) {
-      Toast.show('Demo mode: magic link not available', 'info');
-      return { success: false, error: 'Configure Supabase first' };
+      return { success: false, error: 'Configure Supabase first. See SETUP.md.' };
     }
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    if (error) return { success: false, error: error.message };
-    return { success: true };
+    try {
+      const baseUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: baseUrl + 'dashboard.html' }
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: 'Connection error. Please try again.' };
+    }
   },
 
   // Logout

@@ -172,7 +172,7 @@ const DB = {
   async getActionItems(minutesId) {
     const { data, error } = await supabase
       .from('action_items')
-      .select('*, assignee:profiles(full_name)')
+      .select('*, assignee:profiles!action_items_assigned_to_fkey(full_name)')
       .eq('minute_id', minutesId)
       .order('created_at', { ascending: true });
     return { data: data || [], error };
@@ -181,7 +181,7 @@ const DB = {
   async getAllOpenActionItems() {
     const { data, error } = await supabase
       .from('action_items')
-      .select('*, assignee:profiles(full_name), minutes:meeting_minutes(meeting_id)')
+      .select('*, assignee:profiles!action_items_assigned_to_fkey(full_name), minutes:meeting_minutes(meeting_id)')
       .eq('status', 'open')
       .order('due_date', { ascending: true });
     return { data: data || [], error };
@@ -195,7 +195,7 @@ const DB = {
   async getActionItemsByMeeting(meetingId) {
     const { data, error } = await supabase
       .from('action_items')
-      .select('*, assignee:profiles(full_name, email)')
+      .select('*, assignee:profiles!action_items_assigned_to_fkey(full_name, email)')
       .eq('meeting_id', meetingId)
       .order('due_date', { ascending: true });
     return { data: data || [], error };

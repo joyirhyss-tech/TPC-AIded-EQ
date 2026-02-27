@@ -366,9 +366,9 @@ async function loadActionItems() {
   if (!isSupabaseConfigured()) {
     // Demo data
     const demoActions = [
-      { description: 'Submit Q1 financial report to board', assignee: { full_name: 'JoYi' }, due_date: '2026-03-07', status: 'open' },
-      { description: 'Finalize AIdedEQ website copy for launch', assignee: { full_name: 'Gabby' }, due_date: '2026-03-14', status: 'open' },
-      { description: 'Draft Girls Who Vibe spring schedule', assignee: { full_name: 'Kailani' }, due_date: '2026-03-10', status: 'open' }
+      { task_description: 'Submit Q1 financial report to board', assignee: { full_name: 'JoYi' }, due_date: '2026-03-07', status: 'open' },
+      { task_description: 'Finalize AIdedEQ website copy for launch', assignee: { full_name: 'Gabby' }, due_date: '2026-03-14', status: 'open' },
+      { task_description: 'Draft Girls Who Vibe spring schedule', assignee: { full_name: 'Kailani' }, due_date: '2026-03-10', status: 'open' }
     ];
     countTag.textContent = demoActions.length + ' open';
     list.innerHTML = demoActions.map(a => renderActionRow(a)).join('');
@@ -399,7 +399,7 @@ function renderActionRow(action) {
     <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--linen);">
       <div style="width:4px;height:32px;border-radius:2px;background:${isOverdue ? '#b5545b' : '#c8a961'};flex-shrink:0;"></div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:0.85rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(action.description || action.task || '')}</div>
+        <div style="font-size:0.85rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(action.task_description || '')}</div>
         <div style="display:flex;gap:12px;align-items:center;margin-top:2px;">
           <span style="font-size:0.72rem;color:var(--warm-gray);">${escapeHtml(action.assignee?.full_name || 'Unassigned')}</span>
           ${dueBadge}

@@ -12,7 +12,17 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // All modules reference 'supabase' which resolves to window.supabase in global scope.
 void function() {
   const lib = window.supabase;
-  window.supabase = lib ? lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  if (!lib) {
+    console.error('Supabase JS library failed to load from CDN. Check your internet connection.');
+    window.supabase = null;
+    return;
+  }
+  try {
+    window.supabase = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (err) {
+    console.error('Failed to initialize Supabase client:', err);
+    window.supabase = null;
+  }
 }();
 
 // App constants
@@ -45,7 +55,9 @@ const APP = {
   newTermsStart: '2027-01-01'
 };
 
-// Check if Supabase is configured
+// Check if Supabase is configured and client loaded
 function isSupabaseConfigured() {
-  return SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+  return window.supabase !== null
+    && SUPABASE_URL !== 'YOUR_SUPABASE_URL'
+    && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
 }
