@@ -33,7 +33,7 @@ const APP = {
   boardSize: 6,
   quorumSize: 4,       // Majority needed for approvals
   approvalThreshold: 4, // 4 of 6 for minutes approval
-  adminEmails: ['joyirhyss@gmail.com', 'admin@thepracticecenter.org'],
+  adminEmails: ['joyirhyss@gmail.com', 'gabriellaflowers6@gmail.com', 'kailani.rhyss@gmail.com', 'admin@thepracticecenter.org'],
   roles: {
     admin: 'Admin',
     chair: 'Board Chair',

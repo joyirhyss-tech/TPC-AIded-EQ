@@ -211,12 +211,12 @@ ON CONFLICT (id) DO NOTHING;
 -- Seed board seats. profile_id is NULL for members who haven't created accounts yet.
 -- Update these with actual UUIDs after each member signs up.
 
-INSERT INTO board_seats (id, position, profile_id, term_start, term_end, election_date, notes)
+INSERT INTO board_seats (position, term_start, term_end, election_date, notes)
 VALUES
-  ('seat-0001-0000-0000-000000000001', 'Board President', '90d84ab7-fe9d-4d97-be7e-555f81feadf3', '2025-10-01', '2027-09-30', '2026-12-01', 'Executive Director and Board President'),
-  ('seat-0002-0000-0000-000000000002', 'Board Chair', NULL, '2025-10-01', '2027-09-30', '2026-12-01', 'Alison'),
-  ('seat-0003-0000-0000-000000000003', 'Secretary', NULL, '2025-10-01', '2027-09-30', '2026-12-01', 'Kailani'),
-  ('seat-0004-0000-0000-000000000004', 'Director', NULL, '2025-10-01', '2027-09-30', '2026-12-01', 'Gabby: Director, AIdedEQ'),
-  ('seat-0005-0000-0000-000000000005', 'Director', NULL, '2025-10-01', '2027-09-30', '2026-12-01', 'Jay'),
-  ('seat-0006-0000-0000-000000000006', 'Director', NULL, '2025-10-01', '2027-09-30', '2026-12-01', 'Kobe')
-ON CONFLICT (id) DO NOTHING;
+  ('Board President', '2025-10-01', '2027-09-30', '2026-12-01', 'JoYi: Executive Director & Board President'),
+  ('Board Chair', '2025-10-01', '2027-09-30', '2026-12-01', 'Alison: Board Chair'),
+  ('Secretary', '2025-10-01', '2027-09-30', '2026-12-01', 'Kailani: Board Secretary'),
+  ('Director', '2025-10-01', '2027-09-30', '2026-12-01', 'Gabby: Director, AIdedEQ'),
+  ('Director', '2025-10-01', '2027-09-30', '2026-12-01', 'Jay: Board Member'),
+  ('Director', '2025-10-01', '2027-09-30', '2026-12-01', 'Kobe: Board Member')
+ON CONFLICT DO NOTHING;
